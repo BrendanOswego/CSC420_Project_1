@@ -24,10 +24,10 @@ public class MainSwing {
     }
 
     public static void main(String[] args){
-        JFrame jFrame = new JFrame("MainSwingS");
+        JFrame jFrame = new JFrame("MainSwing");
+        jFrame.setSize(500,500);
         jFrame.setContentPane(new MainSwing().panel1);
         jFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        jFrame.pack();
         jFrame.setVisible(true);
     }
 
