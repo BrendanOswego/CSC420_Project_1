@@ -1,6 +1,8 @@
 package com.example.mainpackage;
 
 import javax.swing.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 
 /**
  * Created by brendan on 9/2/16.
@@ -9,19 +11,25 @@ public class MainSwing {
     private JCheckBox checkBox1;
     private JPanel panel1;
 
-    public JCheckBox getCheckBox1() {
-        return checkBox1;
+
+    public MainSwing(){
+
+        checkBox1.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                System.out.println("Clicked");
+            }
+        });
+
     }
 
-    public void setCheckBox1(JCheckBox checkBox1) {
-        this.checkBox1 = checkBox1;
+    public static void main(String[] args){
+        JFrame jFrame = new JFrame("MainSwingS");
+        jFrame.setContentPane(new MainSwing().panel1);
+        jFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        jFrame.pack();
+        jFrame.setVisible(true);
     }
 
-    public JPanel getPanel1() {
-        return panel1;
-    }
 
-    public void setPanel1(JPanel panel1) {
-        this.panel1 = panel1;
-    }
 }
