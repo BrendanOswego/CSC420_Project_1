@@ -8,28 +8,30 @@ import java.awt.event.ActionListener;
  * Created by brendan on 9/2/16.
  */
 public class MainSwing {
-    private JCheckBox checkBox1;
-    private JPanel panel1;
+    private JPanel mainPanel;
+    private JLabel title;
+    private JLabel artist;
+    private JLabel album;
 
 
-    public MainSwing(){
+    public MainSwing() {
 
-        checkBox1.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                System.out.println("Clicked");
-            }
-        });
-
+        title.setText("Title");
+        artist.setText("Artist");
+        album.setText("Album");
     }
 
-    public static void main(String[] args){
+    public static void main(String[] args) {
         JFrame jFrame = new JFrame("MainSwing");
-        jFrame.setSize(500,500);
-        jFrame.setContentPane(new MainSwing().panel1);
+        jFrame.setSize(500, 500);
+        jFrame.setContentPane(new MainSwing().mainPanel);
         jFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         jFrame.setVisible(true);
+
+
     }
+
+
 
 
 }
