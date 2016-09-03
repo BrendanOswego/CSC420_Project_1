@@ -1,4 +1,4 @@
-package com.example.mainpackage;
+package mainpackage;
 
 /**
  * Created by brendan on 9/2/16.
