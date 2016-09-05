@@ -1,0 +1,7 @@
+When switching between frames, if memory needs to be cleared, destroy the frame and set the next frame to visible.
+i.e:  
+  frame1.dispose();
+  frame2.setVisible(true);
+If not heavily cached:
+  frame1.setVisible(false);
+  frame2.setVisible(true);
