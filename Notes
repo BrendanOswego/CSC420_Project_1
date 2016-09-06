@@ -5,5 +5,25 @@ i.e:
 If not heavily cached:
     frame1.setVisible(false);
     frame2.setVisible(true);
-----------------------------------
+--------------------------------------------------------------
+Dynamic music/drag & drop MP3
 
+Ideas 9/6:
+(Subject to Change)
+
+https://docs.oracle.com/javase/tutorial/uiswing/concurrency/worker.html
+https://docs.oracle.com/javase/8/docs/api/javax/swing/SwingWorker.html
+
+-Libray contains all songs
+-Playlist Folder that contains all paths/names to selected songs added  in Library
+-Mouse click functionality takes priority over key strokes
+-Dynamic Library
+    1. Update Library (add,remove)
+    2. Change current song
+    3. Change ordering of songs (artist, song)
+-Download songs from internet (check legality with Alex)
+    1. Youtube link rip music from link
+-?Music videos?
+-Different display when clicking on Artist
+-Different design using BorderLayout -> west side = Previous song, east side = Next song
+-Add play,stop,pause buttons
