@@ -1,4 +1,4 @@
-package mainpackage;
+package main;
 
 /**
  * Created by brendan on 9/2/16.

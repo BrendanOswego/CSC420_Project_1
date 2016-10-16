@@ -1,0 +1,23 @@
+{
+  "library": [{
+    "name": "default",
+    "song": [
+      {
+        "title": "Thunderstruck",
+        "artist": "AC/DC",
+        "duration": "500",
+        "source":"File extension here"
+      },
+      {
+        "title": "Brendan",
+        "artist": "Test",
+        "duration": "421"
+      },
+      {
+        "title": "Dearly Beloved",
+        "artist": "Kingdom Hearts",
+        "duration": "356"
+      }
+    ]
+  }]
+}
