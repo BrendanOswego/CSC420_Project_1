@@ -66,7 +66,7 @@ public class MainSwing {
 
         westPanel.setPreferredSize(new Dimension(120, jFrame.getHeight()));
         eastPanel.setPreferredSize(new Dimension(120, jFrame.getHeight()));
-        infoPanel.setPreferredSize(new Dimension(jFrame.getWidth(), 160));
+        infoPanel.setPreferredSize(new Dimension(jFrame.getWidth(), 100));
         mainPanel.setPreferredSize(new Dimension(jFrame.getWidth(), jFrame.getHeight()));
         soundControlPanel.setPreferredSize(new Dimension(100, 10));
 
@@ -117,6 +117,7 @@ public class MainSwing {
             mapping.put(label.getText(), i);
 
             Object[] songRow = {libraryList.get(i), i};
+
             dataModel.addRow(songRow);
 
             label.addMouseListener(new MouseListener());
@@ -125,6 +126,7 @@ public class MainSwing {
         songTable.setFocusable(false);
         songTable.setRowSelectionAllowed(true);
         songTable.setAutoCreateRowSorter(true);
+        songTable.setFillsViewportHeight(true);
         songTable.setModel(dataModel);
         songTable.setDefaultRenderer(Object.class,new CustomCellRender());
 
@@ -188,7 +190,6 @@ public class MainSwing {
         mainPanel.add(infoPanel, BorderLayout.NORTH);
         mainPanel.add(centerPanel, BorderLayout.CENTER);
         mainPanel.add(westPanel, BorderLayout.LINE_START);
-        mainPanel.add(eastPanel, BorderLayout.LINE_END);
 
         jFrame.setContentPane(mainPanel);
         jFrame.setVisible(true);

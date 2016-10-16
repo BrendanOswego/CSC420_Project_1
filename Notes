@@ -27,3 +27,12 @@ https://docs.oracle.com/javase/8/docs/api/javax/swing/SwingWorker.html
 -Different display when clicking on Artist
 -Different design using BorderLayout -> west side = Previous song, east side = Next song
 -Add play,stop,pause buttons
+-----------------------------------------------------------------
+- Album cover on top right corner only album cover no information
+- remove “Artist” right panel
+- Master Menu Toolbar
+- Add help menu option rightmost menu item
+- Add Next Button to the right of “Set Time” text
+- remove pause button and listen for button click
+    - Change between pause and play
+

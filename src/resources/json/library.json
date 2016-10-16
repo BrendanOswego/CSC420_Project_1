@@ -1,24 +1,35 @@
 {
-  "library": [{
-    "name": "default",
-    "song": [
-      {
-        "title": "Thunderstruck",
-        "artist": "AC/DC",
-        "duration": "500",
-        "source":"File extension here"
-        "count":"20"
-      },
-      {
-        "title": "Brendan",
-        "artist": "Test",
-        "duration": "421"
-      },
-      {
-        "title": "Dearly Beloved",
-        "artist": "Kingdom Hearts",
-        "duration": "356"
-      }
-    ]
-  }]
+  "library": [
+    {
+      "name": "default",
+      "song": [
+        {
+          "id": "123",
+          "title": "Thunderstruck",
+          "artist": "AC/DC",
+          "duration": "500"
+        },
+        {
+          "id": "124",
+          "title": "Brendan",
+          "artist": "Test",
+          "duration": "421"
+        },
+        {
+          "title": "Dearly Beloved",
+          "artist": "Kingdom Hearts",
+          "duration": "356"
+        }
+      ]
+    }
+  ],
+  "name": "My Tunes",
+  "song": [
+    {
+      "id": "123"
+    },
+    {
+      "id": "124"
+    }
+  ]
 }
