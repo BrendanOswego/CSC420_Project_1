@@ -38,15 +38,11 @@ public class MainSwing {
     private ArrayList<JLabel> songLabels;
     private Map<String, Integer> mapping;
     private Dimension screenSize;
-    private String[] colNames = {"Song", "Artist"};
+    private String[] colNames = {"Song", "Artist","Album","Duration"};
     private JPopupMenu optionMenu;
 
-    public MainSwing() {
-        createDesign();
-    }
-
     public static void main(String[] args) {
-        MainSwing swing = new MainSwing();
+        new MainSwing().createDesign();
     }
 
 
@@ -57,7 +53,7 @@ public class MainSwing {
         screenSize = Toolkit.getDefaultToolkit().getScreenSize();
 
 
-        jFrame.setSize(screenSize.width / 2, screenSize.height);
+        jFrame.setSize(screenSize.width , screenSize.height);
 
         JPanel infoPanel = new JPanel();
         JPanel mainPanel = new JPanel();
@@ -102,13 +98,7 @@ public class MainSwing {
         JSONParser parser = new JSONParser();
 
         try {
-
             Object obj = parser.parse(new FileReader(findLibJSON("/json/library.json")));
-
-
-
-
-
         } catch(FileNotFoundException e) {
             e.printStackTrace();
         } catch(IOException e){
@@ -137,6 +127,11 @@ public class MainSwing {
         songTable.setAutoCreateRowSorter(true);
         songTable.setModel(dataModel);
         songTable.setDefaultRenderer(Object.class,new CustomCellRender());
+
+        setPopupMenu();
+
+
+
         centerPanel.add(new JScrollPane(songTable));
 
         JSlider musicSlider = new JSlider(JSlider.HORIZONTAL);
@@ -204,6 +199,14 @@ public class MainSwing {
 
     }
 
+    private void setPopupMenu(){
+        optionMenu = new JPopupMenu();
+        optionMenu.add("Play");
+        optionMenu.add("Get Info");
+        optionMenu.add("Copy");
+        optionMenu.add("Delete");
+    }
+
 
     private ImageIcon findImagePath(String path) {
 
@@ -228,7 +231,6 @@ public class MainSwing {
         }
 
     }
-
 
 
     private void createIcon(JLabel label, String name, int width, int height) {
@@ -271,11 +273,9 @@ public class MainSwing {
         }
     }
 
-
     public void setTitle(String title) {
         this.title.setText(title);
     }
-
 
     class MouseListener implements java.awt.event.MouseListener {
 

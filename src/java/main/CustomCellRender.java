@@ -28,8 +28,14 @@ public class CustomCellRender extends DefaultTableCellRenderer {
                     setBackground(Color.lightGray);
                 }
             }
+        if(value!= null) {
 
-        setText(value.toString());
+
+            setText(value.toString());
+        }else {
+            setText("");
+        }
+
         return this;
     }
 }
