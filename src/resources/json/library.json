@@ -1,35 +1,52 @@
 {
-  "library": [
-    {
-      "name": "default",
-      "song": [
-        {
-          "id": "123",
-          "title": "Thunderstruck",
-          "artist": "AC/DC",
-          "duration": "500"
-        },
-        {
-          "id": "124",
-          "title": "Brendan",
-          "artist": "Test",
-          "duration": "421"
-        },
-        {
-          "title": "Dearly Beloved",
-          "artist": "Kingdom Hearts",
-          "duration": "356"
-        }
-      ]
-    }
-  ],
-  "name": "My Tunes",
-  "song": [
-    {
-      "id": "123"
-    },
-    {
-      "id": "124"
-    }
-  ]
+  "library": {
+    "playlist":[
+      {
+        "name": "default",
+        "song": [
+          {
+            "id": "121",
+            "title": "Song 1",
+            "artist": "Artist 1",
+            "duration": "500"
+          },
+          {
+            "id": "122",
+            "title": "Song 2",
+            "artist": "Artist 2",
+            "duration": "421"
+          },
+          {
+            "id": "123",
+            "title": "Song 3",
+            "artist": "Artist 3",
+            "duration": "356"
+          },
+          {
+            "id": "124",
+            "title": "Song 4",
+            "artist": "Artist 4",
+            "duration": "356"
+          },
+          {
+            "id": "125",
+            "title": "Song 5",
+            "artist": "Artist 5",
+            "duration": "356"
+          },
+          {
+            "id": "126",
+            "title": "Song 6",
+            "artist": "Artist 6",
+            "duration": "356"
+          },
+          {
+            "id": "127",
+            "title": "Song 7",
+            "artist": "Artist 7",
+            "duration": "500"
+          }
+        ]
+      }]
+  }
 }

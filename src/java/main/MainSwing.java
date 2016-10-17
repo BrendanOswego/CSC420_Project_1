@@ -1,6 +1,8 @@
 package main;
 
 
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
@@ -8,15 +10,11 @@ import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.awt.event.InputEvent;
+import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.IOException;
+import java.io.*;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 
 /**
@@ -36,10 +34,11 @@ public class MainSwing {
     private JLabel totalTime;
     private ArrayList<String> libraryList;
     private ArrayList<JLabel> songLabels;
-    private Map<String, Integer> mapping;
+    private Map<Song, Integer> mapping;
     private Dimension screenSize;
-    private String[] colNames = {"Song", "Artist","Album","Duration"};
+    private String[] colNames = {"Song", "Artist", "Album", "Duration"};
     private JPopupMenu optionMenu;
+    private int songIndex = 0;
 
     public static void main(String[] args) {
         new MainSwing().createDesign();
@@ -51,9 +50,10 @@ public class MainSwing {
         jFrame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 
         screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+        optionMenu = new JPopupMenu();
 
 
-        jFrame.setSize(screenSize.width , screenSize.height);
+        jFrame.setSize(screenSize.width /2, screenSize.height);
 
         JPanel infoPanel = new JPanel();
         JPanel mainPanel = new JPanel();
@@ -88,51 +88,62 @@ public class MainSwing {
         JLabel artistHeader = new JLabel("Artist");
 
         libraryList = new ArrayList<>();
-        libraryList.add("Test");
-        libraryList.add("Another One");
-        libraryList.add("Song 3");
-        libraryList.add("Song 4");
-        libraryList.add("Song 5");
-        libraryList.add("Song 6");
-
-        JSONParser parser = new JSONParser();
-
-        try {
-            Object obj = parser.parse(new FileReader(findLibJSON("/json/library.json")));
-        } catch(FileNotFoundException e) {
-            e.printStackTrace();
-        } catch(IOException e){
-            e.printStackTrace();
-        } catch (ParseException e){
-            e.printStackTrace();
-        }
 
 
-        mapping = new HashMap<String, Integer>();
+        ClassLoader classLoader = getClass().getClassLoader();
+        File file = new File("src/resources/json/library.json");
+        mapping = new HashMap<Song, Integer>();
         DefaultTableModel dataModel = new DefaultTableModel(colNames, 0);
 
-        for (int i = 0; i < libraryList.size(); i++) {
-            JLabel label = new JLabel(libraryList.get(i));
-            label.setToolTipText(libraryList.get(i));
-            mapping.put(label.getText(), i);
+        JSONParser parser = new JSONParser();
+        Song tempSong;
+        try {
+            Object obj = parser.parse(new FileReader(file));
+            JSONObject jsonObject = (JSONObject)obj;
+            JSONObject library = (JSONObject) jsonObject.get("library");
+            JSONArray playlistArr = (JSONArray)library.get("playlist");
 
-            Object[] songRow = {libraryList.get(i), i};
+            for(int i = 0;i <playlistArr.size();i++){
+                JSONObject playElement = (JSONObject) playlistArr.get(i);
+                String playlistName = (String)playElement.get("name");
+                if(playlistName.equalsIgnoreCase("default")){
+                    JSONArray songArr = (JSONArray) playElement.get("song");
+                        for (int j = 0; j < songArr.size(); j++) {
+                            JSONObject songElement = (JSONObject) songArr.get(j);
+                            if (songElement != null) {
+                                String title = (String) songElement.get("title");
+                                String id = (String) songElement.get("id");
+                                String artist = (String) songElement.get("artist");
+                                String duration = (String) songElement.get("duration");
+                                tempSong = new Song(id, title, artist, null, duration);
+                                mapping.put(tempSong, j);
+                                Object[] rowObj = {tempSong.getTitle(), tempSong.getArtist(), tempSong.getDuration()};
+                                dataModel.addRow(rowObj);
+                        }
 
-            dataModel.addRow(songRow);
+                    }
+                }else {
+                    //TODO-Fetch songs based on id instead of adding all info to all playlists
+                }
 
-            label.addMouseListener(new MouseListener());
+            }
 
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (ParseException e) {
+            e.printStackTrace();
         }
+
+
         songTable.setFocusable(false);
         songTable.setRowSelectionAllowed(true);
         songTable.setAutoCreateRowSorter(true);
         songTable.setFillsViewportHeight(true);
         songTable.setModel(dataModel);
-        songTable.setDefaultRenderer(Object.class,new CustomCellRender());
-
-        setPopupMenu();
-
-
+        songTable.setDefaultRenderer(Object.class, new CustomCellRender());
+        songTable.setComponentPopupMenu(showPopupMenu());
 
         centerPanel.add(new JScrollPane(songTable));
 
@@ -196,18 +207,6 @@ public class MainSwing {
 
     }
 
-    private void setUpLibrary() {
-
-    }
-
-    private void setPopupMenu(){
-        optionMenu = new JPopupMenu();
-        optionMenu.add("Play");
-        optionMenu.add("Get Info");
-        optionMenu.add("Copy");
-        optionMenu.add("Delete");
-    }
-
 
     private ImageIcon findImagePath(String path) {
 
@@ -221,18 +220,17 @@ public class MainSwing {
 
     }
 
-    private File findLibJSON(String path){
+    private JPopupMenu showPopupMenu(){
+        JMenuItem itemPlay = new JMenuItem("Play");
+        JMenuItem itemInfo = new JMenuItem("Get Info");
+        JMenuItem itemDelete = new JMenuItem("Delete");
+        JMenu playlistMenu = new JMenu();
 
-        URL jsonUrl = MainSwing.class.getResource(path);
-        if(jsonUrl != null){
-            return new File(String.valueOf(jsonUrl));
-        }else {
-            System.err.println("JSON Not Fount");
-            return null;
-        }
-
+        optionMenu.add(itemPlay);
+        optionMenu.add(itemInfo);
+        optionMenu.add(itemDelete);
+        return optionMenu;
     }
-
 
     private void createIcon(JLabel label, String name, int width, int height) {
         ImageIcon icon = findImagePath("/images/" + name + ".gif");
@@ -240,11 +238,7 @@ public class MainSwing {
         Image scaledImage = image.getScaledInstance(width, height, Image.SCALE_SMOOTH);
         icon = new ImageIcon(scaledImage);
         label.setIcon(icon);
-        if (icon != null) {
-            System.out.println("Image Found");
-        } else {
-            System.out.println("Image not found");
-        }
+
     }
 
     private void createIconPNG(JLabel label, String name, int width, int height) {
@@ -253,11 +247,7 @@ public class MainSwing {
         Image scaledImage = image.getScaledInstance(width, height, Image.SCALE_SMOOTH);
         icon = new ImageIcon(scaledImage);
         label.setIcon(icon);
-        if (icon != null) {
-            System.out.println("Image Found");
-        } else {
-            System.out.println("Image not found");
-        }
+
     }
 
     private void createIconPNG(JButton label, String name, int width, int height) {
@@ -267,11 +257,7 @@ public class MainSwing {
         Image scaledImage = image.getScaledInstance(width, height, Image.SCALE_SMOOTH);
         icon = new ImageIcon(scaledImage);
         label.setIcon(icon);
-        if (icon != null) {
-            System.out.println("Image Found");
-        } else {
-            System.out.println("Image not found");
-        }
+
     }
 
     public void setTitle(String title) {
