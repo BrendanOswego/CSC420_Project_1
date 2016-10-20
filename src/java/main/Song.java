@@ -1,9 +1,6 @@
 package main;
 
-/**
- * Created by brendan on 10/16/16.
- */
-public class Song {
+class Song {
 
     private String title;
     private String artist;
@@ -11,7 +8,7 @@ public class Song {
     private String duration;
     private String id;
 
-    public Song(String id, String title,String artist,String album,String duration){
+    Song(String id, String title, String artist, String album, String duration) {
         this.id = id;
         this.title = title;
         this.artist = artist;
@@ -19,43 +16,43 @@ public class Song {
         this.duration = duration;
     }
 
-    public String getTitle() {
+    String getTitle() {
         return title;
     }
 
-    public void setTitle(String title) {
+    void setTitle(String title) {
         this.title = title;
     }
 
-    public String getArtist() {
+    String getArtist() {
         return artist;
     }
 
-    public void setArtist(String artist) {
+    void setArtist(String artist) {
         this.artist = artist;
     }
 
-    public String getAlbum() {
+    String getAlbum() {
         return album;
     }
 
-    public void setAlbum(String album) {
+    void setAlbum(String album) {
         this.album = album;
     }
 
-    public String getDuration() {
+    String getDuration() {
         return duration;
     }
 
-    public void setDuration(String duration) {
+    void setDuration(String duration) {
         this.duration = duration;
     }
 
-    public String getId() {
+    String getId() {
         return id;
     }
 
-    public void setId(String id) {
+    void setId(String id) {
         this.id = id;
     }
 }
