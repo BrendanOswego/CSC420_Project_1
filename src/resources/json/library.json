@@ -1,6 +1,6 @@
 {
   "library": {
-    "playlist":[
+    "playlist": [
       {
         "name": "default",
         "song": [
@@ -47,6 +47,21 @@
             "duration": "500"
           }
         ]
-      }]
+      },
+      {
+        "name": "test",
+        "song": [
+          {
+            "id": "125"
+          },
+          {
+            "id": "124"
+          },
+          {
+            "id":"126"
+          }
+        ]
+      }
+    ]
   }
 }

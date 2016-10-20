@@ -1,6 +1,5 @@
 package main;
 
-
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -9,8 +8,6 @@ import org.json.simple.parser.ParseException;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
-import java.awt.event.InputEvent;
-import java.awt.event.MouseEvent;
 import java.io.*;
 import java.net.URL;
 import java.util.*;
@@ -18,11 +15,10 @@ import java.util.*;
 public class MainSwing {
     private static final File file = new File("src/resources/json/library.json");
 
-
-    private JFrame jFrame;
     private JTable songTable = new JTable();
-    private Map<Song, Integer> mapping;
     private String[] colNames = {"Song", "Artist", "Album", "Duration"};
+
+    private HashMap<String, Song> songList;
 
     public static void main(String[] args) {
         new MainSwing().createDesign();
@@ -30,8 +26,7 @@ public class MainSwing {
 
 
     private void createDesign() {
-
-        jFrame = new JFrame();
+        JFrame jFrame = new JFrame();
         jFrame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
         jFrame.setSize(screenSize.width / 2, screenSize.height);
@@ -93,6 +88,8 @@ public class MainSwing {
         refresh.setOpaque(true);
         pause.setOpaque(true);
 
+        //This has to be called before the songTable is added to the center panel
+        //And anything that changes the songTable information as well i.e changing the name of a song
         initializeJson();
 
         centerPanel.add(new JScrollPane(songTable));
@@ -121,19 +118,10 @@ public class MainSwing {
 
     }
 
-
-    private ImageIcon findImagePath(String path) {
-        URL imgUrl = MainSwing.class.getResource(path);
-        if (imgUrl != null) {
-            return new ImageIcon(imgUrl);
-        } else {
-            System.err.println("No content found");
-            return null;
-        }
-    }
-
     private void initializeJson() {
-        mapping = new HashMap<>();
+
+        ArrayList<String> jsonIdList = new ArrayList<>();
+        songList = new HashMap<>();
 
         DefaultTableModel dataModel = new DefaultTableModel(colNames, 0);
 
@@ -145,6 +133,7 @@ public class MainSwing {
             JSONObject library = (JSONObject) jsonObject.get("library");
             JSONArray playlistArr = (JSONArray) library.get("playlist");
 
+
             for (int i = 0; i < playlistArr.size(); i++) {
                 JSONObject playElement = (JSONObject) playlistArr.get(i);
                 String playlistName = (String) playElement.get("name");
@@ -155,19 +144,65 @@ public class MainSwing {
                         if (songElement != null) {
                             String title = (String) songElement.get("title");
                             String id = (String) songElement.get("id");
+                            jsonIdList.add(id);
                             String artist = (String) songElement.get("artist");
                             String duration = (String) songElement.get("duration");
                             tempSong = new Song(id, title, artist, null, duration);
-                            mapping.put(tempSong, j);
+                            songList.put(id, tempSong);
                             Object[] rowObj = {tempSong.getTitle(), tempSong.getArtist(), tempSong.getDuration()};
                             dataModel.addRow(rowObj);
                         }
 
                     }
-                } else {
-                    //TODO-Fetch songs based on id instead of adding all info to all playlists
                 }
 
+            }
+
+        } catch (IOException | ParseException e) {
+            e.printStackTrace();
+        }
+
+        //System.out.println(jsonSongList.toString());
+
+        songTable.setFocusable(false);
+        songTable.setRowSelectionAllowed(true);
+        songTable.setAutoCreateRowSorter(true);
+        songTable.setFillsViewportHeight(true);
+        songTable.setModel(dataModel);
+        songTable.setDefaultRenderer(Object.class, new CustomCellRender());
+        songTable.setComponentPopupMenu(showPopupMenu());
+    }
+
+    private void loadPlaylistToTable(String name) {
+
+        DefaultTableModel dataModel = new DefaultTableModel(colNames, 0);
+
+        JSONParser parser = new JSONParser();
+
+        try {
+            Object obj = parser.parse(new FileReader(file));
+            JSONObject jsonObject = (JSONObject) obj;
+            JSONObject library = (JSONObject) jsonObject.get("library");
+            JSONArray playlistArr = (JSONArray) library.get("playlist");
+            for (int i = 0; i < playlistArr.size(); i++) {
+                JSONObject playElement = (JSONObject) playlistArr.get(i);
+                String playName = (String) playElement.get("name");
+                if (playName != null)
+                    if (name.equals(playName)) {
+                        JSONArray songArr = (JSONArray) playElement.get("song");
+                        for (int j = 0; j < songArr.size(); j++) {
+                            JSONObject songElement = (JSONObject) songArr.get(j);
+                            if (songElement != null) {
+                                String id = (String) songElement.get("id");
+                                System.out.println(id);
+                                if (songList.containsKey(id)) {
+                                    Object[] row = {songList.get(id).getTitle(), songList.get(id).getArtist(), songList.get(id).getDuration()};
+                                    dataModel.addRow(row);
+                                }
+
+                            }
+                        }
+                    }
             }
 
         } catch (IOException | ParseException e) {
@@ -184,6 +219,28 @@ public class MainSwing {
         songTable.setComponentPopupMenu(showPopupMenu());
     }
 
+
+    void createPlaylist(String name) {
+        JSONParser parser = new JSONParser();
+        Object obj = null;
+        try {
+            obj = parser.parse(new FileReader(file));
+        } catch (IOException | ParseException e) {
+            e.printStackTrace();
+        }
+        JSONObject jsonObject = (JSONObject) obj;
+        JSONObject library = (JSONObject) jsonObject.get("library");
+        JSONArray playArr = (JSONArray) library.get("playlist");
+
+        JSONObject newEntry = new JSONObject();
+        newEntry.put("song", new JSONArray());
+        newEntry.put("name", name);
+
+        playArr.add(newEntry);
+
+
+    }
+
     private JPopupMenu showPopupMenu() {
         JPopupMenu optionMenu = new JPopupMenu();
         JMenuItem itemPlay = new JMenuItem("Play");
@@ -194,6 +251,16 @@ public class MainSwing {
         optionMenu.add(itemInfo);
         optionMenu.add(itemDelete);
         return optionMenu;
+    }
+
+    private ImageIcon findImagePath(String path) {
+        URL imgUrl = MainSwing.class.getResource(path);
+        if (imgUrl != null) {
+            return new ImageIcon(imgUrl);
+        } else {
+            System.err.println("No content found");
+            return null;
+        }
     }
 
     private void createIcon(JLabel label, String name, int width, int height) {
@@ -221,48 +288,6 @@ public class MainSwing {
             System.err.println("PNG " + name + "  was  not found");
         }
 
-    }
-
-    class MouseListener implements java.awt.event.MouseListener {
-
-        @Override
-        public void mouseClicked(MouseEvent e) {
-
-        }
-
-        @Override
-        public void mousePressed(MouseEvent e) {
-
-        }
-
-        @Override
-        public void mouseReleased(MouseEvent e) {
-            if (jFrame != null) {
-                if (System.getProperty("os.name").contains("Mac OS X")) {
-                    if ((e.getModifiers() & InputEvent.BUTTON1_MASK) != 0 && (e.getModifiers() & InputEvent.CTRL_MASK) != 0) {
-                        JOptionPane.showMessageDialog(jFrame, "Test Right" + mapping.toString());
-                    } else if ((e.getModifiers() & InputEvent.BUTTON1_MASK) != 0) {
-                        JOptionPane.showMessageDialog(jFrame, "Test Left");
-                    }
-                } else {
-                    if ((e.getModifiers() & InputEvent.BUTTON1_MASK) != 0) {
-                        JOptionPane.showMessageDialog(jFrame, "Test Left" + mapping.toString());
-                    } else if ((e.getModifiers() & InputEvent.BUTTON2_MASK) != 0) {
-                        JOptionPane.showMessageDialog(jFrame, "Test Right");
-                    }
-                }
-            }
-        }
-
-        @Override
-        public void mouseEntered(MouseEvent e) {
-
-        }
-
-        @Override
-        public void mouseExited(MouseEvent e) {
-
-        }
     }
 
 

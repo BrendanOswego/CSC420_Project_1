@@ -7,6 +7,7 @@ class Song {
     private String album;
     private String duration;
     private String id;
+    private Song song;
 
     Song(String id, String title, String artist, String album, String duration) {
         this.id = id;
@@ -14,6 +15,13 @@ class Song {
         this.artist = artist;
         this.album = album;
         this.duration = duration;
+    }
+
+    public Song getSong(String id){
+        if(id.equals(song.getId())){
+            return new Song(song.getId(),song.getTitle(),song.getArtist(),song.getAlbum(),song.getDuration());
+        }
+        return null;
     }
 
     String getTitle() {
