@@ -42,7 +42,7 @@ class CustomMenuBar extends JMenuBar {
         menu = new JMenu("Playlist");
         menuBar.add(menu);
 
-        item = new JMenuItem("Create New");
+        item = new JMenuItem("Create New Playlist");
         item.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {

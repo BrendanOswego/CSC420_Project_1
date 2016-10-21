@@ -55,7 +55,6 @@ public class MainSwing {
         infoPanel.setLayout(verticalLayout);
 
         westPanel.setBorder(BorderFactory.createLineBorder(Color.BLACK));
-        centerPanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
 
         JLabel libraryHeader = new JLabel("Library");
         JLabel artistHeader = new JLabel("Artist");
@@ -115,6 +114,8 @@ public class MainSwing {
 
         jFrame.setContentPane(mainPanel);
         jFrame.setVisible(true);
+
+        //loadPlaylistToTable("test");
 
     }
 
@@ -195,6 +196,7 @@ public class MainSwing {
                             if (songElement != null) {
                                 String id = (String) songElement.get("id");
                                 System.out.println(id);
+                                //System.out.println(library.toString());
                                 if (songList.containsKey(id)) {
                                     Object[] row = {songList.get(id).getTitle(), songList.get(id).getArtist(), songList.get(id).getDuration()};
                                     dataModel.addRow(row);
@@ -228,6 +230,7 @@ public class MainSwing {
         } catch (IOException | ParseException e) {
             e.printStackTrace();
         }
+
         JSONObject jsonObject = (JSONObject) obj;
         JSONObject library = (JSONObject) jsonObject.get("library");
         JSONArray playArr = (JSONArray) library.get("playlist");
@@ -237,6 +240,27 @@ public class MainSwing {
         newEntry.put("name", name);
 
         playArr.add(newEntry);
+
+        try {
+            System.out.println("Writing to JSON");
+            FileWriter writer= new FileWriter(file);
+            writer.write(jsonObject.toJSONString());
+            writer.flush();
+            writer.close();
+            try {
+                Thread.sleep(40);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            System.out.println("Wrote to JSON");
+            System.out.println(jsonObject.toString());
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+
+        //System.out.println(playArr.toString());
 
 
     }
