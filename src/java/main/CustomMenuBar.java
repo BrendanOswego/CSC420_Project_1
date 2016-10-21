@@ -9,7 +9,6 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.IOException;
 
-
 class CustomMenuBar extends JMenuBar {
 
     private MainSwing mainSwing = new MainSwing();
