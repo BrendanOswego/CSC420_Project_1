@@ -19,6 +19,8 @@ import static java.awt.Component.CENTER_ALIGNMENT;
 
 //TODO-Add remove playlist functionality, which also means displaying available playlists to remove
 
+//TODO-Load newly added playlists to the menu right after creation
+
 
 public class MainSwing {
     private static final File file = new File("src/resources/json/library.json");
@@ -28,7 +30,7 @@ public class MainSwing {
     private String[] colNames = {"Song", "Artist", "Album", "Duration"};
 
     private HashMap<String, Song> songList;
-    private ArrayList<String> playlistNames = new ArrayList<>();
+    private ArrayList<String> playlistNames;
 
     public static void main(String[] args) {
         EventQueue.invokeLater(new Runnable() {
@@ -237,6 +239,7 @@ public class MainSwing {
     }
 
     void initializeAddedPlaylists() {
+        playlistNames = new ArrayList<>();
 
         JSONParser parser = new JSONParser();
         System.out.println("Initialized loading playlist names");
@@ -441,6 +444,9 @@ public class MainSwing {
                             if (!field.getText().isEmpty()) {
                                 System.out.println("Performing Action");
                                 createPlaylist(field.getText());
+                                initializeAddedPlaylists();
+
+                                dialog.setVisible(false);
                             }
                         }
                     });
@@ -449,7 +455,22 @@ public class MainSwing {
             });
             menu.add(item);
             menu.addSeparator();
-            JMenu subMenu = new JMenu("Add to Playlist");
+            JMenu subMenu = new JMenu("Open Playlist");
+            menu.add(subMenu);
+            JMenuItem playlistItem;
+            for (int i = 0; i < playlistNames.size(); i++) {
+                playlistItem = new JMenuItem(playlistNames.get(i));
+                int finalI = i;
+                playlistItem.addActionListener(new ActionListener() {
+                    @Override
+                    public void actionPerformed(ActionEvent e) {
+                        loadPlaylistToTable(playlistNames.get(finalI));
+                    }
+                });
+                subMenu.add(playlistItem);
+            }
+
+            subMenu = new JMenu("Add to Playlist");
             menu.add(subMenu);
             for (int i = 0; i < playlistNames.size(); i++) {
                 item = new JMenuItem(playlistNames.get(i));
