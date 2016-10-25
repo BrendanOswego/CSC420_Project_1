@@ -1,5 +1,6 @@
 package main;
 
+import net.miginfocom.swing.MigLayout;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -8,25 +9,40 @@ import org.json.simple.parser.ParseException;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.io.*;
 import java.net.URL;
 import java.util.*;
+
+import static java.awt.Component.CENTER_ALIGNMENT;
+
+//TODO-Add remove playlist functionality, which also means displaying available playlists to remove
+
 
 public class MainSwing {
     private static final File file = new File("src/resources/json/library.json");
 
     private JTable songTable = new JTable();
+    private JFrame jFrame;
     private String[] colNames = {"Song", "Artist", "Album", "Duration"};
 
     private HashMap<String, Song> songList;
+    private ArrayList<String> playlistNames = new ArrayList<>();
 
     public static void main(String[] args) {
-        new MainSwing().createDesign();
+        EventQueue.invokeLater(new Runnable() {
+            @Override
+            public void run() {
+                new MainSwing().createDesign();
+            }
+        });
+
     }
 
 
     private void createDesign() {
-        JFrame jFrame = new JFrame();
+        jFrame = new JFrame();
         jFrame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
         jFrame.setSize(screenSize.width / 2, screenSize.height);
@@ -67,17 +83,15 @@ public class MainSwing {
         JButton pause = new JButton();
         JButton refresh = new JButton();
 
-        CustomMenuBar topMenu = new CustomMenuBar();
-
         musicSlider.setValue(0);
 
         title.setFont(title.getFont().deriveFont(15f));
         artist.setFont(artist.getFont().deriveFont(15f));
 
-        title.setAlignmentX(Component.CENTER_ALIGNMENT);
-        artist.setAlignmentX(Component.CENTER_ALIGNMENT);
-        libraryHeader.setAlignmentX(Component.CENTER_ALIGNMENT);
-        artistHeader.setAlignmentX(Component.CENTER_ALIGNMENT);
+        title.setAlignmentX(CENTER_ALIGNMENT);
+        artist.setAlignmentX(CENTER_ALIGNMENT);
+        libraryHeader.setAlignmentX(CENTER_ALIGNMENT);
+        artistHeader.setAlignmentX(CENTER_ALIGNMENT);
 
         createIconPNG(play, "play_button", 20, 20);
         createIconPNG(pause, "pause_button", 20, 20);
@@ -90,6 +104,9 @@ public class MainSwing {
         //This has to be called before the songTable is added to the center panel
         //And anything that changes the songTable information as well i.e changing the name of a song
         initializeJson();
+        initializeAddedPlaylists();
+
+        CustomMenuBar topMenu = new CustomMenuBar();
 
         centerPanel.add(new JScrollPane(songTable));
 
@@ -115,13 +132,10 @@ public class MainSwing {
         jFrame.setContentPane(mainPanel);
         jFrame.setVisible(true);
 
-        //loadPlaylistToTable("test");
-
     }
 
     private void initializeJson() {
 
-        
         ArrayList<String> jsonIdList = new ArrayList<>();
         songList = new HashMap<>();
 
@@ -175,7 +189,7 @@ public class MainSwing {
         songTable.setComponentPopupMenu(showPopupMenu());
     }
 
-    private void loadPlaylistToTable(String name) {
+    void loadPlaylistToTable(String name) {
 
         DefaultTableModel dataModel = new DefaultTableModel(colNames, 0);
 
@@ -222,6 +236,36 @@ public class MainSwing {
         songTable.setComponentPopupMenu(showPopupMenu());
     }
 
+    void initializeAddedPlaylists() {
+
+        JSONParser parser = new JSONParser();
+        System.out.println("Initialized loading playlist names");
+        try {
+            Object obj = parser.parse(new FileReader(file));
+            JSONObject jsonObject = (JSONObject) obj;
+            JSONObject library = (JSONObject) jsonObject.get("library");
+            JSONArray playlistArr = (JSONArray) library.get("playlist");
+            for (int i = 0; i < playlistArr.size(); i++) {
+                JSONObject playElement = (JSONObject) playlistArr.get(i);
+                String playName = (String) playElement.get("name");
+                if (playName != null) {
+                    playlistNames.add(playName);
+                }
+
+            }
+            System.out.println("Playlists added: " + playlistNames.toString());
+
+        } catch (IOException | ParseException e) {
+            e.printStackTrace();
+        }
+
+
+    }
+
+    void addSelectedSongToPlaylist(Song song, String playlistName) {
+
+    }
+
 
     void createPlaylist(String name) {
         JSONParser parser = new JSONParser();
@@ -244,7 +288,7 @@ public class MainSwing {
 
         try {
             System.out.println("Writing to JSON");
-            FileWriter writer= new FileWriter(file);
+            FileWriter writer = new FileWriter(file);
             writer.write(jsonObject.toJSONString());
             writer.flush();
             writer.close();
@@ -316,4 +360,106 @@ public class MainSwing {
     }
 
 
+    public ArrayList<String> getPlaylistNames() {
+        return playlistNames;
+    }
+
+    public void setPlaylistNames(ArrayList<String> playlistNames) {
+        this.playlistNames = playlistNames;
+    }
+
+    public int getPlaylistSize() {
+        return playlistNames.size();
+    }
+
+
+    class CustomMenuBar extends JMenuBar {
+
+
+        JMenuBar showMenuBar() {
+
+            JMenuBar menuBar = new JMenuBar();
+
+            JMenu menu = new JMenu("File");
+            menuBar.add(menu);
+            JMenuItem item = new JMenuItem("Add Song");
+            menu.add(item);
+
+            menu = new JMenu("Edit");
+            menuBar.add(menu);
+
+            item = new JMenuItem("Undo");
+            menu.add(item);
+
+            item = new JMenuItem("Redo");
+            menu.add(item);
+
+            menu.addSeparator();
+
+            item = new JMenuItem("Test");
+            menu.add(item);
+
+            menu = new JMenu("Playlist");
+            menuBar.add(menu);
+
+            item = new JMenuItem("Create New Playlist");
+            item.addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+
+                    JDialog dialog = new JDialog();
+                    dialog.setLayout(new MigLayout("align 50% 50%"));
+                    int width = 250;
+                    int height = 150;
+                    int xPos = ((int) getSize().getWidth() - width) / 2;
+                    int yPos = ((int) getSize().getHeight() - height) / 2;
+                    dialog.setBounds(xPos, yPos, width, height);
+                    JLabel title = new JLabel("Enter new Playlist name");
+                    JButton submit = new JButton("Submit");
+                    JButton cancel = new JButton("Cancel");
+                    JTextField field = new JTextField(10);
+                    field.setAlignmentX(CENTER_ALIGNMENT);
+
+                    dialog.add(title, "span");
+                    dialog.add(field, "span");
+                    dialog.add(submit);
+                    dialog.add(cancel);
+
+
+                    dialog.show();
+
+
+                    cancel.addActionListener(new ActionListener() {
+                        @Override
+                        public void actionPerformed(ActionEvent e) {
+
+                        }
+                    });
+                    submit.addActionListener(new ActionListener() {
+                        @Override
+                        public void actionPerformed(ActionEvent e) {
+                            if (!field.getText().isEmpty()) {
+                                System.out.println("Performing Action");
+                                createPlaylist(field.getText());
+                            }
+                        }
+                    });
+
+                }
+            });
+            menu.add(item);
+            menu.addSeparator();
+            JMenu subMenu = new JMenu("Add to Playlist");
+            menu.add(subMenu);
+            for (int i = 0; i < playlistNames.size(); i++) {
+                item = new JMenuItem(playlistNames.get(i));
+                subMenu.add(item);
+            }
+            return menuBar;
+
+
+        }
+
+
+    }
 }
