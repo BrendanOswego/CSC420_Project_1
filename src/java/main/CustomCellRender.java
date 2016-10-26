@@ -29,8 +29,6 @@ public class CustomCellRender extends DefaultTableCellRenderer {
                 }
             }
         if(value!= null) {
-
-
             setText(value.toString());
         }else {
             setText("");
