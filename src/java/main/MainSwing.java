@@ -14,17 +14,13 @@ import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
+import java.awt.event.*;
 import java.io.*;
 import java.net.URL;
 import java.util.*;
 
 import static java.awt.Component.CENTER_ALIGNMENT;
 import static javax.swing.SwingConstants.CENTER;
-import static javax.swing.SwingConstants.HORIZONTAL;
 import static javax.swing.SwingConstants.VERTICAL;
 
 //TODO-Add remove playlist functionality, which also means displaying available playlists to remove
@@ -46,6 +42,9 @@ public class MainSwing {
     private JScrollPane scrollPane;
     private final JFileChooser fileChooser = new JFileChooser();
     private final FileNameExtensionFilter fileFilter = new FileNameExtensionFilter("MP3 Files", "mp3");
+    private JList<String> list;
+    private DefaultListModel<String> libraryModel = new DefaultListModel<>();
+    private JScrollPane playScroll;
 
     private String[] colNames = {"Song", "Artist", "Duration"};
     private HashMap<String, Song> songList;
@@ -107,6 +106,7 @@ public class MainSwing {
 
         title.setFont(title.getFont().deriveFont(15f));
         artist.setFont(artist.getFont().deriveFont(15f));
+        libraryHeader.setFont(libraryHeader.getFont().deriveFont(15f));
 
         title.setAlignmentX(CENTER_ALIGNMENT);
         artist.setAlignmentX(CENTER_ALIGNMENT);
@@ -337,9 +337,19 @@ public class MainSwing {
     }
 
     private void loadPlaylistsToPanel() {
-        JSeparator separator = new JSeparator(HORIZONTAL);
         JSONParser parser = new JSONParser();
         System.out.println("Initialized loading playlist names");
+        if (list == null) {
+            list = new JList<>(libraryModel);
+            playScroll = new JScrollPane(list);
+            list.setFont(list.getFont().deriveFont(15f));
+            list.setSelectionMode(ListSelectionModel.SINGLE_INTERVAL_SELECTION);
+            list.setLayoutOrientation(JList.VERTICAL);
+            list.setVisibleRowCount(-1);
+        } else{
+            list.removeAll();
+            libraryModel.removeAllElements();
+        }
         try {
             Object obj = parser.parse(new FileReader(file));
             JSONObject jsonObject = (JSONObject) obj;
@@ -354,49 +364,37 @@ public class MainSwing {
                 } else {
                     playLabel.setText(playName);
                 }
-                playLabel.addMouseListener(new MouseListener() {
-                    @Override
-                    public void mouseClicked(MouseEvent e) {
-                        if (playLabel.getText().equals("All Songs")) {
-                            loadPlaylistToTable("default");
-                        } else {
-                            loadPlaylistToTable(playLabel.getText());
-                        }
-                        fillEmptyRows();
-                    }
-
-                    @Override
-                    public void mousePressed(MouseEvent e) {
-
-                    }
-
-                    @Override
-                    public void mouseReleased(MouseEvent e) {
-
-                    }
-
-                    @Override
-                    public void mouseEntered(MouseEvent e) {
-
-                    }
-
-                    @Override
-                    public void mouseExited(MouseEvent e) {
-
-                    }
-                });
-                playLabel.setBorder(BorderFactory.createEmptyBorder(5, 0, 5, 0));
-                playLabel.setHorizontalAlignment(CENTER);
-                libraryPanel.add(playLabel);
+                libraryModel.addElement(playLabel.getText());
+                list.addMouseListener(mouseListener);
 
             }
-            System.out.println("Playlists added: " + playlistNames.toString());
+            libraryPanel.add(playScroll);
 
         } catch (IOException | ParseException e) {
             e.printStackTrace();
         }
 
     }
+
+    private MouseListener mouseListener = new MouseAdapter() {
+        @Override
+        public void mouseClicked(MouseEvent e) {
+            JList theList = (JList) e.getSource();
+            if (e.getClickCount() == 2) {
+                int index = theList.locationToIndex(e.getPoint());
+                if (index >= 0) {
+                    String name = (String) theList.getModel().getElementAt(index);
+                    if (name.equals("All Songs")) {
+                        loadPlaylistToTable("default");
+                    } else {
+                        loadPlaylistToTable(name);
+                    }
+                    fillEmptyRows();
+                }
+            }
+        }
+    };
+
 
     private void fillEmptyRows() {
         int rows = songTable.getRowCount();
@@ -433,12 +431,19 @@ public class MainSwing {
     private JPopupMenu showPopupMenu() {
         JPopupMenu optionMenu = new JPopupMenu();
         JMenuItem itemPlay = new JMenuItem("Play");
-        JMenuItem itemInfo = new JMenuItem("Get Info");
-        JMenuItem itemDelete = new JMenuItem("Delete");
-
         optionMenu.add(itemPlay);
+        JMenuItem itemAdd = new JMenuItem("Add To Playlist");
+        optionMenu.add(itemAdd);
+        JMenu subMenu = new JMenu();
+        for(int i = 0;i< 4;i++){
+            JMenuItem item = new JMenuItem(String.valueOf(i));
+            subMenu.add(item);
+        }
+        JMenuItem itemInfo = new JMenuItem("Get Info");
         optionMenu.add(itemInfo);
+        JMenuItem itemDelete = new JMenuItem("Delete");
         optionMenu.add(itemDelete);
+
         return optionMenu;
     }
 
@@ -567,6 +572,10 @@ public class MainSwing {
                                 System.out.println("Performing Action");
                                 createPlaylist(field.getText());
                                 initializeAddedPlaylists();
+                                loadPlaylistsToPanel();
+                                jFrame.revalidate();
+                                jFrame.repaint();
+                                jFrame.pack();
                                 dialog.setVisible(false);
                             }
                         }
