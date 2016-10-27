@@ -18,19 +18,19 @@ import java.awt.event.*;
 import java.io.*;
 import java.net.URL;
 import java.util.*;
-
 import static java.awt.Component.CENTER_ALIGNMENT;
 import static javax.swing.SwingConstants.CENTER;
 import static javax.swing.SwingConstants.VERTICAL;
 
-//TODO-Add remove playlist functionality, which also means displaying available playlists to remove
+//TODO- When all necessary methods are created, add Description comments for javadoc
 
-//TODO-Load newly added playlists to the sub menu right after creation
+//TODO-Add remove playlist functionality, which also means displaying available playlists to remove
 
 //TODO- Add shuffle button, add previous song button and next song buttons
 
-//TODO-Add playlists to the library panel on the left side
-
+/**
+ * Main class for application, handles most of the functionality of the app including JSON Parsing, Swing Component creation, and MP3 Data conversion from ID3 Tags
+ */
 
 public class MainSwing {
     private static final File file = new File("src/resources/json/library.json");
@@ -61,7 +61,7 @@ public class MainSwing {
     }
 
 
-    private void createDesign() {
+    public void createDesign() {
         jFrame = new JFrame();
         jFrame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
@@ -164,7 +164,7 @@ public class MainSwing {
         fillEmptyRows();
     }
 
-    private void initializeJson() {
+    public void initializeJson() {
 
         ArrayList<String> jsonIdList = new ArrayList<>();
         songList = new HashMap<>();
@@ -218,7 +218,7 @@ public class MainSwing {
     }
 
 
-    private void loadPlaylistToTable(String name) {
+    public void loadPlaylistToTable(String name) {
 
         DefaultTableModel dataModel = new DefaultTableModel(colNames, 0);
 
@@ -265,7 +265,7 @@ public class MainSwing {
         songTable.setComponentPopupMenu(showPopupMenu());
     }
 
-    private void initializeAddedPlaylists() {
+    public void initializeAddedPlaylists() {
         playlistNames = new ArrayList<>();
 
         JSONParser parser = new JSONParser();
@@ -297,7 +297,7 @@ public class MainSwing {
     }
 
 
-    private void createPlaylist(String name) {
+    public void createPlaylist(String name) {
         JSONParser parser = new JSONParser();
         Object obj = null;
         try {
@@ -337,9 +337,7 @@ public class MainSwing {
     }
 
 
-
-
-    private void loadPlaylistsToPanel() {
+    public void loadPlaylistsToPanel() {
         JSONParser parser = new JSONParser();
         System.out.println("Initialized loading playlist names");
         if (list == null) {
@@ -349,7 +347,7 @@ public class MainSwing {
             list.setSelectionMode(ListSelectionModel.SINGLE_INTERVAL_SELECTION);
             list.setLayoutOrientation(JList.VERTICAL);
             list.setVisibleRowCount(-1);
-        } else{
+        } else {
             list.removeAll();
             libraryModel.removeAllElements();
         }
@@ -369,7 +367,7 @@ public class MainSwing {
                 }
                 libraryModel.addElement(playLabel.getText());
                 list.addMouseListener(mouseListener);
-                if((int)playLabel.getSize().getWidth() > (int)libraryPanel.getSize().getWidth()){
+                if ((int) playLabel.getSize().getWidth() > (int) libraryPanel.getSize().getWidth()) {
                     list.setFont(list.getFont().deriveFont(10f));
                 }
             }
@@ -382,7 +380,7 @@ public class MainSwing {
 
     }
 
-    private MouseListener mouseListener = new MouseAdapter() {
+    public MouseListener mouseListener = new MouseAdapter() {
         @Override
         public void mouseClicked(MouseEvent e) {
             JList theList = (JList) e.getSource();
@@ -402,7 +400,7 @@ public class MainSwing {
     };
 
 
-    private void fillEmptyRows() {
+    public void fillEmptyRows() {
         int rows = songTable.getRowCount();
         int rowHeight = songTable.getRowHeight();
         int tableHeight = songTable.getTableHeader().getHeight() + (rows * rowHeight);
@@ -412,7 +410,7 @@ public class MainSwing {
         }
     }
 
-    private void showFileChooser() {
+    public void showFileChooser() {
         fileChooser.setFileFilter(fileFilter);
         fileChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
         int returnVal = fileChooser.showOpenDialog(jFrame);
@@ -434,14 +432,14 @@ public class MainSwing {
     }
 
 
-    private JPopupMenu showPopupMenu() {
+    public JPopupMenu showPopupMenu() {
         JPopupMenu optionMenu = new JPopupMenu();
         JMenuItem itemPlay = new JMenuItem("Play");
         optionMenu.add(itemPlay);
         JMenuItem itemAdd = new JMenuItem("Add To Playlist");
         optionMenu.add(itemAdd);
         JMenu subMenu = new JMenu();
-        for(int i = 0;i< 4;i++){
+        for (int i = 0; i < 4; i++) {
             JMenuItem item = new JMenuItem(String.valueOf(i));
             subMenu.add(item);
         }
@@ -453,7 +451,7 @@ public class MainSwing {
         return optionMenu;
     }
 
-    private ImageIcon findImagePath(String path) {
+    public ImageIcon findImagePath(String path) {
         URL imgUrl = MainSwing.class.getResource(path);
         if (imgUrl != null) {
             return new ImageIcon(imgUrl);
@@ -463,7 +461,7 @@ public class MainSwing {
         }
     }
 
-    private void createIcon(JLabel label, String name, int width, int height) {
+    public void createIcon(JLabel label, String name, int width, int height) {
         ImageIcon icon = findImagePath("/images/" + name + ".gif");
         if (icon != null) {
             Image image = icon.getImage();
@@ -476,7 +474,7 @@ public class MainSwing {
 
     }
 
-    private void createIconPNG(JButton label, String name, int width, int height) {
+    public void createIconPNG(JButton label, String name, int width, int height) {
         //Uses above method and sets the icon to the local JLabel
         ImageIcon icon = findImagePath("/images/" + name + ".png");
         if (icon != null) {
@@ -503,7 +501,10 @@ public class MainSwing {
         return playlistNames.size();
     }
 
-    private class CustomMenuBar extends JMenuBar {
+    /**
+     * Inner class that creates the JMenu for the main JFrame to use that hosts the components for the top menu
+     */
+    public class CustomMenuBar extends JMenuBar {
 
 
         JMenuBar showMenuBar() {
@@ -579,9 +580,7 @@ public class MainSwing {
                                 createPlaylist(field.getText());
                                 initializeAddedPlaylists();
                                 loadPlaylistsToPanel();
-                                jFrame.revalidate();
-                                jFrame.repaint();
-                                jFrame.pack();
+                                //TODO-Create method that adds the newly added playlist to the menu a runtime
                                 dialog.setVisible(false);
                             }
                         }
