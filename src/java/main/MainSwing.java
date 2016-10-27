@@ -336,6 +336,9 @@ public class MainSwing {
 
     }
 
+
+
+
     private void loadPlaylistsToPanel() {
         JSONParser parser = new JSONParser();
         System.out.println("Initialized loading playlist names");
@@ -366,8 +369,11 @@ public class MainSwing {
                 }
                 libraryModel.addElement(playLabel.getText());
                 list.addMouseListener(mouseListener);
-
+                if((int)playLabel.getSize().getWidth() > (int)libraryPanel.getSize().getWidth()){
+                    list.setFont(list.getFont().deriveFont(10f));
+                }
             }
+
             libraryPanel.add(playScroll);
 
         } catch (IOException | ParseException e) {
