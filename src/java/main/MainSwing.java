@@ -41,6 +41,7 @@ public class MainSwing {
     private static final String previous = "previous_button";
     private static final String next = "next_button";
     private static final String shuffle = "shuffle_button";
+    private static final String help = "help_button";
 
     private JTable songTable = new JTable();
     private JFrame jFrame;
@@ -49,6 +50,7 @@ public class MainSwing {
     private JButton previousButton;
     private JButton nextButton;
     private JButton shuffleButton;
+    private JButton helpButton;
     private JScrollPane scrollPane;
     private final JFileChooser fileChooser = new JFileChooser();
     private final FileNameExtensionFilter fileFilter = new FileNameExtensionFilter("MP3 Files", "mp3");
@@ -111,11 +113,13 @@ public class MainSwing {
         playPauseButton = new JButton();
         nextButton = new JButton();
         shuffleButton = new JButton();
+        helpButton = new JButton();
 
         createIconPNG(previousButton, previous, 20, 20);
         createIconPNG(playPauseButton, play, 20, 20);
         createIconPNG(nextButton, next, 20, 20);
         createIconPNG(shuffleButton, shuffle, 20, 20);
+        createIconPNG(helpButton, help, 20, 20);
 
         previousButton.addActionListener(previousListener);
         playPauseButton.addActionListener(playPauseListener);
@@ -135,7 +139,7 @@ public class MainSwing {
         artistHeader.setAlignmentX(CENTER_ALIGNMENT);
         libraryHeader.setHorizontalAlignment(CENTER);
 
-        title.setBorder(BorderFactory.createEmptyBorder(10,0,0,0));
+        title.setBorder(BorderFactory.createEmptyBorder(10, 0, 0, 0));
 
         createIconPNG(playPauseButton, "play_button", 20, 20);
 
@@ -179,6 +183,7 @@ public class MainSwing {
 
         jFrame.setContentPane(mainPanel);
         jFrame.setVisible(true);
+        jFrame.setFocusable(true);
 
         fillEmptyRows();
     }
@@ -434,7 +439,7 @@ public class MainSwing {
     private ActionListener shuffleListener = new ActionListener() {
         @Override
         public void actionPerformed(ActionEvent e) {
-        //TODO-Add shuffle functionality
+            //TODO-Add shuffle functionality
         }
     };
 
@@ -442,10 +447,10 @@ public class MainSwing {
         @Override
         public void actionPerformed(ActionEvent e) {
             if (!isPlaying) {
-                createIconPNG(playPauseButton,pause,20,20);
+                createIconPNG(playPauseButton, pause, 20, 20);
                 isPlaying = true;
             } else {
-                createIconPNG(playPauseButton,play,20,20);
+                createIconPNG(playPauseButton, play, 20, 20);
                 isPlaying = false;
             }
         }
@@ -630,10 +635,12 @@ public class MainSwing {
                             if (!field.getText().isEmpty()) {
                                 System.out.println("Performing Action");
                                 createPlaylist(field.getText());
+                                playlistNames.add(field.getText());
                                 initializeAddedPlaylists();
                                 loadPlaylistsToPanel();
                                 //TODO-Create method that adds the newly added playlist to the menu a runtime
                                 dialog.setVisible(false);
+                                menuBar.revalidate();
                             }
                         }
                     });
@@ -647,11 +654,20 @@ public class MainSwing {
             JMenuItem playlistItem;
             for (int i = 0; i < playlistNames.size(); i++) {
                 playlistItem = new JMenuItem(playlistNames.get(i));
+                if (playlistItem.getText().equals("default")) {
+                    playlistItem.setText("Library");
+                } else {
+
+                }
                 int finalI = i;
                 playlistItem.addActionListener(new ActionListener() {
                     @Override
                     public void actionPerformed(ActionEvent e) {
-                        loadPlaylistToTable(playlistNames.get(finalI));
+                        if (playlistNames.get(finalI).equals("Library")) {
+                            loadPlaylistToTable(playlistNames.get(0));
+                        } else {
+                            loadPlaylistToTable(playlistNames.get(finalI));
+                        }
                     }
                 });
                 subMenu.add(playlistItem);
@@ -663,6 +679,10 @@ public class MainSwing {
                 item = new JMenuItem(playlistNames.get(i));
                 subMenu.add(item);
             }
+            menuBar.add(Box.createHorizontalGlue());
+            createIconPNG(helpButton, help, 20, 20);
+            helpButton.setBackground(Color.black);
+            menuBar.add(helpButton);
             return menuBar;
 
 
