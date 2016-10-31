@@ -5,7 +5,7 @@ import javax.swing.table.DefaultTableCellRenderer;
 import java.awt.*;
 
 /**
- * Created by brendan on 10/16/16.
+ * Extends the DefaultTableCellRenderer giving the ability to customize the cells in the JTable used for displaying the songs
  */
 public class CustomCellRender extends DefaultTableCellRenderer {
 

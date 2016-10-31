@@ -23,22 +23,32 @@ import static java.awt.Component.CENTER_ALIGNMENT;
 import static javax.swing.SwingConstants.CENTER;
 import static javax.swing.SwingConstants.VERTICAL;
 
+//TODO- When all necessary methods are created, add Description comments for javadoc
+
 //TODO-Add remove playlist functionality, which also means displaying available playlists to remove
 
-//TODO-Load newly added playlists to the sub menu right after creation
+//TODO- Change the previous and next images to be thicker, right now very thin looking
 
-//TODO- Add shuffle button, add previous song button and next song buttons
-
-//TODO-Add playlists to the library panel on the left side
-
+/**
+ * Main class for application, handles most of the functionality of the app including JSON Parsing, Swing Component creation, and MP3 Data conversion from ID3 Tags
+ */
 
 public class MainSwing {
     private static final File file = new File("src/resources/json/library.json");
-    private static final Color darkGray = Color.decode("#262626");
+
+    private static final String play = "play_button";
+    private static final String pause = "pause_button";
+    private static final String previous = "previous_button";
+    private static final String next = "next_button";
+    private static final String shuffle = "shuffle_button";
 
     private JTable songTable = new JTable();
     private JFrame jFrame;
     private JPanel libraryPanel;
+    private JButton playPauseButton;
+    private JButton previousButton;
+    private JButton nextButton;
+    private JButton shuffleButton;
     private JScrollPane scrollPane;
     private final JFileChooser fileChooser = new JFileChooser();
     private final FileNameExtensionFilter fileFilter = new FileNameExtensionFilter("MP3 Files", "mp3");
@@ -49,6 +59,7 @@ public class MainSwing {
     private String[] colNames = {"Song", "Artist", "Duration"};
     private HashMap<String, Song> songList;
     private ArrayList<String> playlistNames;
+    private boolean isPlaying = false;
 
     public static void main(String[] args) {
         EventQueue.invokeLater(new Runnable() {
@@ -96,9 +107,21 @@ public class MainSwing {
         JLabel title = new JLabel("Title");
         JLabel artist = new JLabel("Artist");
         JSlider musicSlider = new JSlider(JSlider.HORIZONTAL);
-        JButton play = new JButton();
-        JButton pause = new JButton();
-        JButton refresh = new JButton();
+        previousButton = new JButton();
+        playPauseButton = new JButton();
+        nextButton = new JButton();
+        shuffleButton = new JButton();
+
+        createIconPNG(previousButton, previous, 20, 20);
+        createIconPNG(playPauseButton, play, 20, 20);
+        createIconPNG(nextButton, next, 20, 20);
+        createIconPNG(shuffleButton, shuffle, 20, 20);
+
+        previousButton.addActionListener(previousListener);
+        playPauseButton.addActionListener(playPauseListener);
+        nextButton.addActionListener(nextListener);
+        shuffleButton.addActionListener(shuffleListener);
+
 
         musicSlider.setValue(0);
 
@@ -114,13 +137,9 @@ public class MainSwing {
 
         title.setBorder(BorderFactory.createEmptyBorder(10,0,0,0));
 
-        createIconPNG(play, "play_button", 20, 20);
-        createIconPNG(pause, "pause_button", 20, 20);
-        createIconPNG(refresh, "replay_button", 20, 20);
+        createIconPNG(playPauseButton, "play_button", 20, 20);
 
-        play.setOpaque(true);
-        refresh.setOpaque(true);
-        pause.setOpaque(true);
+        playPauseButton.setOpaque(true);
 
         CustomMenuBar topMenu = new CustomMenuBar();
 
@@ -137,13 +156,13 @@ public class MainSwing {
         initializeAddedPlaylists();
 
         centerPanel.add(scrollPane);
-
-        soundControlPanel.add(play);
+        soundControlPanel.add(previousButton);
+        soundControlPanel.add(playPauseButton);
         soundControlPanel.add(currentTime);
         soundControlPanel.add(musicSlider);
         soundControlPanel.add(totalTime);
-        soundControlPanel.add(pause);
-        soundControlPanel.add(refresh);
+        soundControlPanel.add(nextButton);
+        soundControlPanel.add(shuffleButton);
 
         infoPanel.add(title);
         infoPanel.add(artist);
@@ -336,6 +355,7 @@ public class MainSwing {
 
     }
 
+
     private void loadPlaylistsToPanel() {
         JSONParser parser = new JSONParser();
         System.out.println("Initialized loading playlist names");
@@ -346,7 +366,7 @@ public class MainSwing {
             list.setSelectionMode(ListSelectionModel.SINGLE_INTERVAL_SELECTION);
             list.setLayoutOrientation(JList.VERTICAL);
             list.setVisibleRowCount(-1);
-        } else{
+        } else {
             list.removeAll();
             libraryModel.removeAllElements();
         }
@@ -366,8 +386,11 @@ public class MainSwing {
                 }
                 libraryModel.addElement(playLabel.getText());
                 list.addMouseListener(mouseListener);
-
+                if ((int) playLabel.getSize().getWidth() > (int) libraryPanel.getSize().getWidth()) {
+                    list.setFont(list.getFont().deriveFont(10f));
+                }
             }
+
             libraryPanel.add(playScroll);
 
         } catch (IOException | ParseException e) {
@@ -391,6 +414,39 @@ public class MainSwing {
                     }
                     fillEmptyRows();
                 }
+            }
+        }
+    };
+
+    private ActionListener previousListener = new ActionListener() {
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            //TODO-Add functionality to play previous song...maybe have separate class for MP3 data?
+        }
+    };
+
+    private ActionListener nextListener = new ActionListener() {
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            //TODO-Add functionality to play next song...maybe have separate class for MP3 data?
+        }
+    };
+    private ActionListener shuffleListener = new ActionListener() {
+        @Override
+        public void actionPerformed(ActionEvent e) {
+        //TODO-Add shuffle functionality
+        }
+    };
+
+    private ActionListener playPauseListener = new ActionListener() {
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            if (!isPlaying) {
+                createIconPNG(playPauseButton,pause,20,20);
+                isPlaying = true;
+            } else {
+                createIconPNG(playPauseButton,play,20,20);
+                isPlaying = false;
             }
         }
     };
@@ -435,7 +491,7 @@ public class MainSwing {
         JMenuItem itemAdd = new JMenuItem("Add To Playlist");
         optionMenu.add(itemAdd);
         JMenu subMenu = new JMenu();
-        for(int i = 0;i< 4;i++){
+        for (int i = 0; i < 4; i++) {
             JMenuItem item = new JMenuItem(String.valueOf(i));
             subMenu.add(item);
         }
@@ -497,6 +553,9 @@ public class MainSwing {
         return playlistNames.size();
     }
 
+    /**
+     * Inner class that creates the JMenu for the main JFrame to use that hosts the components for the top menu
+     */
     private class CustomMenuBar extends JMenuBar {
 
 
@@ -573,9 +632,7 @@ public class MainSwing {
                                 createPlaylist(field.getText());
                                 initializeAddedPlaylists();
                                 loadPlaylistsToPanel();
-                                jFrame.revalidate();
-                                jFrame.repaint();
-                                jFrame.pack();
+                                //TODO-Create method that adds the newly added playlist to the menu a runtime
                                 dialog.setVisible(false);
                             }
                         }
