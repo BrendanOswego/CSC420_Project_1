@@ -89,8 +89,6 @@ public class MainSwing {
         centerPanel.setLayout(centerLayout);
         infoPanel.setLayout(verticalLayout);
 
-        libraryPanel.setBorder(BorderFactory.createLineBorder(Color.BLACK));
-
         JLabel libraryHeader = new JLabel("Library");
         JLabel artistHeader = new JLabel("Artist");
         JLabel currentTime = new JLabel("0:00");
@@ -113,6 +111,8 @@ public class MainSwing {
         libraryHeader.setAlignmentX(CENTER_ALIGNMENT);
         artistHeader.setAlignmentX(CENTER_ALIGNMENT);
         libraryHeader.setHorizontalAlignment(CENTER);
+
+        title.setBorder(BorderFactory.createEmptyBorder(10,0,0,0));
 
         createIconPNG(play, "play_button", 20, 20);
         createIconPNG(pause, "pause_button", 20, 20);
@@ -503,8 +503,10 @@ public class MainSwing {
         JMenuBar showMenuBar() {
 
             JMenuBar menuBar = new JMenuBar();
+            menuBar.setBackground(Color.black);
 
             JMenu menu = new JMenu("File");
+            menu.setBackground(Color.black);
             menuBar.add(menu);
             JMenuItem item = new JMenuItem("Add Song");
             item.addActionListener(new ActionListener() {
@@ -516,6 +518,7 @@ public class MainSwing {
             menu.add(item);
 
             menu = new JMenu("Edit");
+            menu.setBackground(Color.black);
             menuBar.add(menu);
 
             item = new JMenuItem("Undo");
@@ -524,12 +527,9 @@ public class MainSwing {
             item = new JMenuItem("Redo");
             menu.add(item);
 
-            menu.addSeparator();
-
-            item = new JMenuItem("Test");
-            menu.add(item);
 
             menu = new JMenu("Playlist");
+            menu.setBackground(Color.black);
             menuBar.add(menu);
 
             item = new JMenuItem("Create New Playlist");
@@ -548,15 +548,15 @@ public class MainSwing {
                     JButton submit = new JButton("Submit");
                     JButton cancel = new JButton("Cancel");
                     JTextField field = new JTextField(10);
-                    field.setAlignmentX(CENTER_ALIGNMENT);
 
                     dialog.add(title, "span");
                     dialog.add(field, "span");
                     dialog.add(submit);
                     dialog.add(cancel);
 
-
-                    dialog.show();
+                    dialog.pack();
+                    dialog.setVisible(true);
+                    dialog.setLocationRelativeTo(jFrame);
 
 
                     cancel.addActionListener(new ActionListener() {
