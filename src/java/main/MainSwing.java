@@ -571,10 +571,8 @@ public class MainSwing {
         JMenuBar showMenuBar() {
 
             JMenuBar menuBar = new JMenuBar();
-            menuBar.setBackground(Color.black);
 
             JMenu menu = new JMenu("File");
-            menu.setBackground(Color.black);
             menuBar.add(menu);
             JMenuItem item = new JMenuItem("Add Song");
             item.addActionListener(new ActionListener() {
@@ -586,7 +584,6 @@ public class MainSwing {
             menu.add(item);
 
             menu = new JMenu("Edit");
-            menu.setBackground(Color.black);
             menuBar.add(menu);
 
             item = new JMenuItem("Undo");
@@ -597,7 +594,6 @@ public class MainSwing {
 
 
             menu = new JMenu("Playlist");
-            menu.setBackground(Color.black);
             menuBar.add(menu);
 
             item = new JMenuItem("Create New Playlist");
@@ -685,7 +681,6 @@ public class MainSwing {
             }
             menuBar.add(Box.createHorizontalGlue());
             createIconPNG(helpButton, help, 20, 20);
-            helpButton.setBackground(Color.black);
             menuBar.add(helpButton);
             return menuBar;
 
