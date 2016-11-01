@@ -84,11 +84,11 @@ public class MainSwing {
         libraryPanel = new JPanel();
         JPanel centerPanel = new JPanel();
         JPanel soundControlPanel = new JPanel();
+        JPanel musicPanel = new JPanel(new FlowLayout());
 
         libraryPanel.setPreferredSize(new Dimension(120, jFrame.getHeight()));
-        infoPanel.setPreferredSize(new Dimension(jFrame.getWidth(), 100));
+        infoPanel.setPreferredSize(new Dimension(jFrame.getWidth(), 110));
         mainPanel.setPreferredSize(new Dimension(jFrame.getWidth(), jFrame.getHeight()));
-        soundControlPanel.setPreferredSize(new Dimension(100, 10));
 
         BoxLayout centerLayout = new BoxLayout(centerPanel, VERTICAL);
         BorderLayout mainLayout = new BorderLayout();
@@ -128,6 +128,7 @@ public class MainSwing {
 
 
         musicSlider.setValue(0);
+        musicSlider.setPreferredSize(new Dimension(250, 20));
 
         title.setFont(title.getFont().deriveFont(15f));
         artist.setFont(artist.getFont().deriveFont(15f));
@@ -138,8 +139,6 @@ public class MainSwing {
         libraryHeader.setAlignmentX(CENTER_ALIGNMENT);
         artistHeader.setAlignmentX(CENTER_ALIGNMENT);
         libraryHeader.setHorizontalAlignment(CENTER);
-
-        title.setBorder(BorderFactory.createEmptyBorder(10, 0, 0, 0));
 
         createIconPNG(playPauseButton, "play_button", 20, 20);
 
@@ -162,15 +161,19 @@ public class MainSwing {
         centerPanel.add(scrollPane);
         soundControlPanel.add(previousButton);
         soundControlPanel.add(playPauseButton);
-        soundControlPanel.add(currentTime);
-        soundControlPanel.add(musicSlider);
-        soundControlPanel.add(totalTime);
         soundControlPanel.add(nextButton);
         soundControlPanel.add(shuffleButton);
+
+        musicPanel.add(currentTime);
+        musicPanel.add(musicSlider);
+        musicPanel.add(totalTime);
+        musicPanel.setAlignmentX(CENTER_ALIGNMENT);
 
         infoPanel.add(title);
         infoPanel.add(artist);
         infoPanel.add(soundControlPanel);
+        infoPanel.add(musicPanel);
+
 
         libraryPanel.add(libraryHeader);
         loadPlaylistsToPanel();
@@ -482,6 +485,7 @@ public class MainSwing {
                 ID3v1 id3v1Tag = file.getId3v1Tag();
                 System.out.println(id3v1Tag.getArtist());
                 System.out.println(id3v1Tag.getTitle());
+                //TODO-Get necessary info and call addSongToLibrary(Song s) method
             }
         } else {
             System.out.println("File Chooser Cancelled by User");
@@ -626,7 +630,7 @@ public class MainSwing {
                     cancel.addActionListener(new ActionListener() {
                         @Override
                         public void actionPerformed(ActionEvent e) {
-
+                            //TODO- Close Dialog and clear text
                         }
                     });
                     submit.addActionListener(new ActionListener() {
