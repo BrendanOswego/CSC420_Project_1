@@ -629,8 +629,10 @@ public class MainSwing {
             JMenu playlistMenu = new JMenu("Playlist");
 
             menuBar.add(playlistMenu);
+            menu = new JMenu("Playlist");
+            menuBar.add(menu);
 
-            item = new JMenuItem("Create New Playlist");
+                    item = new JMenuItem("Create New Playlist");
             item.addActionListener(new ActionListener() {
                 @Override
                 public void actionPerformed(ActionEvent e) {
