@@ -36,3 +36,9 @@ https://docs.oracle.com/javase/8/docs/api/javax/swing/SwingWorker.html
 - remove pause button and listen for button click
     - Change between pause and play
 
+-------------------------------------------
+Nov. 14th
+
+- TODO-Akeem-> Display screen songs by artist or album (i.e the collapsible functionality)
+- TODO-check online for Visualizer API
+- TODO-Dan->Add separate screen for different view of how information is displayed (ask Akeem or Brendan)

@@ -1,9 +1,8 @@
 package main;
 
-import com.mpatric.mp3agic.ID3v1;
-import com.mpatric.mp3agic.InvalidDataException;
-import com.mpatric.mp3agic.Mp3File;
-import com.mpatric.mp3agic.UnsupportedTagException;
+
+import javazoom.jl.decoder.JavaLayerException;
+import javazoom.jl.player.Player;
 import net.miginfocom.swing.MigLayout;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
@@ -11,12 +10,16 @@ import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
 import javax.swing.*;
+import javax.swing.border.BevelBorder;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.awt.event.*;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 import java.io.*;
 import java.net.URL;
+import java.sql.Time;
 import java.util.*;
 
 import static java.awt.Component.CENTER_ALIGNMENT;
@@ -25,9 +28,13 @@ import static javax.swing.SwingConstants.VERTICAL;
 
 //TODO- When all necessary methods are created, add Description comments for javadoc
 
-//TODO-Add remove playlist functionality, which also means displaying available playlists to remove
+//TODO-Add remove playlist functionality, which also means displaying available playlists to remove at runtime
+
+//FIXME-Display playlists correctly after action is performed i.e remove or add playlist at runtime
 
 //TODO- Change the previous and next images to be thicker, right now very thin looking
+
+//TODO-Have a trail following the scrollbar
 
 /**
  * Main class for application, handles most of the functionality of the app including JSON Parsing, Swing Component creation, and MP3 Data conversion from ID3 Tags
@@ -43,6 +50,9 @@ public class MainSwing {
     private static final String shuffle = "shuffle_button";
     private static final String help = "help_button";
 
+
+    private FileInputStream fileInputStream = new FileInputStream("src/resources/music//test.mp3");
+
     private JTable songTable = new JTable();
     private JFrame jFrame;
     private JPanel libraryPanel;
@@ -57,24 +67,38 @@ public class MainSwing {
     private JList<String> list;
     private DefaultListModel<String> libraryModel = new DefaultListModel<>();
     private JScrollPane playScroll;
+    JLabel currentTime = new JLabel();
 
     private String[] colNames = {"Song", "Artist", "Duration"};
     private HashMap<String, Song> songList;
     private ArrayList<String> playlistNames;
+
+    MusicPlayer player = new MusicPlayer(fileInputStream);
+
     private boolean isPlaying = false;
+
+
+    private JLabel playTest = new JLabel();
+
+    public MainSwing() throws FileNotFoundException, JavaLayerException {
+    }
 
     public static void main(String[] args) {
         EventQueue.invokeLater(new Runnable() {
             @Override
             public void run() {
-                new MainSwing().createDesign();
+                try {
+                    new MainSwing().createDesign();
+                } catch (FileNotFoundException | JavaLayerException e) {
+                    e.printStackTrace();
+                }
             }
         });
 
     }
 
 
-    private void createDesign() {
+    private void createDesign() throws JavaLayerException {
         jFrame = new JFrame();
         jFrame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
@@ -104,8 +128,7 @@ public class MainSwing {
 
         JLabel libraryHeader = new JLabel("Library");
         JLabel artistHeader = new JLabel("Artist");
-        JLabel currentTime = new JLabel("0:00");
-        JLabel totalTime = new JLabel("Set Time");
+        JLabel totalTime = new JLabel("Total Time");
         JLabel title = new JLabel("Title");
         JLabel artist = new JLabel("Artist");
         JSlider musicSlider = new JSlider(JSlider.HORIZONTAL);
@@ -139,8 +162,6 @@ public class MainSwing {
         libraryHeader.setAlignmentX(CENTER_ALIGNMENT);
         artistHeader.setAlignmentX(CENTER_ALIGNMENT);
         libraryHeader.setHorizontalAlignment(CENTER);
-
-        createIconPNG(playPauseButton, "play_button", 20, 20);
 
         playPauseButton.setOpaque(true);
 
@@ -189,6 +210,21 @@ public class MainSwing {
         jFrame.setFocusable(true);
 
         fillEmptyRows();
+
+        System.out.println(player.getPlayerStatus());
+
+    }
+
+    private void setupTableMethods(DefaultTableModel dataModel) {
+        songTable.setDragEnabled(true);
+        songTable.setFocusable(false);
+        songTable.setRowSelectionAllowed(true);
+        songTable.setAutoCreateRowSorter(true);
+        songTable.setFillsViewportHeight(true);
+        songTable.setModel(dataModel);
+        songTable.setDefaultRenderer(Object.class, new CustomCellRender());
+        songTable.setComponentPopupMenu(showPopupMenu());
+        songTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
     }
 
     private void initializeJson() {
@@ -235,13 +271,7 @@ public class MainSwing {
             e.printStackTrace();
         }
 
-        songTable.setFocusable(false);
-        songTable.setRowSelectionAllowed(true);
-        songTable.setAutoCreateRowSorter(true);
-        songTable.setFillsViewportHeight(true);
-        songTable.setModel(dataModel);
-        songTable.setDefaultRenderer(Object.class, new CustomCellRender());
-        songTable.setComponentPopupMenu(showPopupMenu());
+        setupTableMethods(dataModel);
     }
 
 
@@ -283,13 +313,7 @@ public class MainSwing {
             e.printStackTrace();
         }
 
-        songTable.setFocusable(false);
-        songTable.setRowSelectionAllowed(true);
-        songTable.setAutoCreateRowSorter(true);
-        songTable.setFillsViewportHeight(true);
-        songTable.setModel(dataModel);
-        songTable.setDefaultRenderer(Object.class, new CustomCellRender());
-        songTable.setComponentPopupMenu(showPopupMenu());
+        setupTableMethods(dataModel);
     }
 
     private void initializeAddedPlaylists() {
@@ -320,7 +344,7 @@ public class MainSwing {
     }
 
     void addSelectedSongToPlaylist(Song song, String playlistName) {
-
+        //TODO- Create TransferHandler
     }
 
 
@@ -386,19 +410,18 @@ public class MainSwing {
             for (int i = 0; i < playlistArr.size(); i++) {
                 JSONObject playElement = (JSONObject) playlistArr.get(i);
                 String playName = (String) playElement.get("name");
-                JLabel playLabel = new JLabel();
+                JButton jButton;
                 if (playName.equals("default")) {
-                    playLabel.setText("All Songs");
+                    jButton = new JButton("All Songs");
                 } else {
-                    playLabel.setText(playName);
+                    jButton = new JButton(playName);
                 }
-                libraryModel.addElement(playLabel.getText());
+                libraryModel.addElement(jButton.getText());
                 list.addMouseListener(mouseListener);
-                if ((int) playLabel.getSize().getWidth() > (int) libraryPanel.getSize().getWidth()) {
+                if ((int) jButton.getSize().getWidth() > (int) libraryPanel.getSize().getWidth()) {
                     list.setFont(list.getFont().deriveFont(10f));
                 }
             }
-
             libraryPanel.add(playScroll);
 
         } catch (IOException | ParseException e) {
@@ -426,6 +449,7 @@ public class MainSwing {
         }
     };
 
+
     private ActionListener previousListener = new ActionListener() {
         @Override
         public void actionPerformed(ActionEvent e) {
@@ -452,10 +476,13 @@ public class MainSwing {
             if (!isPlaying) {
                 createIconPNG(playPauseButton, pause, 20, 20);
                 isPlaying = true;
+                player.play();
             } else {
                 createIconPNG(playPauseButton, play, 20, 20);
                 isPlaying = false;
+                player.pause();
             }
+            System.out.println(player.getPostion());
         }
     };
 
@@ -475,18 +502,7 @@ public class MainSwing {
         fileChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
         int returnVal = fileChooser.showOpenDialog(jFrame);
         if (returnVal == JFileChooser.APPROVE_OPTION) {
-            Mp3File file = null;
-            try {
-                file = new Mp3File(fileChooser.getSelectedFile());
-            } catch (IOException | UnsupportedTagException | InvalidDataException e) {
-                e.printStackTrace();
-            }
-            if (file != null && file.hasId3v1Tag()) {
-                ID3v1 id3v1Tag = file.getId3v1Tag();
-                System.out.println(id3v1Tag.getArtist());
-                System.out.println(id3v1Tag.getTitle());
-                //TODO-Get necessary info and call addSongToLibrary(Song s) method
-            }
+
         } else {
             System.out.println("File Chooser Cancelled by User");
         }
@@ -549,6 +565,20 @@ public class MainSwing {
 
     }
 
+    private void createIconPNG(JLabel label, String name, int width, int height) {
+        //Uses above method and sets the icon to the local JLabel
+        ImageIcon icon = findImagePath("/images/" + name + ".png");
+        if (icon != null) {
+            Image image = icon.getImage();
+            Image scaledImage = image.getScaledInstance(width, height, Image.SCALE_SMOOTH);
+            icon = new ImageIcon(scaledImage);
+            label.setIcon(icon);
+        } else {
+            System.err.println("PNG " + name + "  was  not found");
+        }
+
+    }
+
 
     public ArrayList<String> getPlaylistNames() {
         return playlistNames;
@@ -563,18 +593,19 @@ public class MainSwing {
     }
 
     /**
-     * Inner class that creates the JMenu for the main JFrame to use that hosts the components for the top menu
+     * Inner class that creates the JMenuBar for the main JFrame
      */
     private class CustomMenuBar extends JMenuBar {
 
-
         JMenuBar showMenuBar() {
 
+            JMenu playlistAddSub = new JMenu("Add to Playlist");
+            JMenu playlistOpenSub = new JMenu("Open Playlist");
+
+
             JMenuBar menuBar = new JMenuBar();
-            menuBar.setBackground(Color.black);
 
             JMenu menu = new JMenu("File");
-            menu.setBackground(Color.black);
             menuBar.add(menu);
             JMenuItem item = new JMenuItem("Add Song");
             item.addActionListener(new ActionListener() {
@@ -586,7 +617,6 @@ public class MainSwing {
             menu.add(item);
 
             menu = new JMenu("Edit");
-            menu.setBackground(Color.black);
             menuBar.add(menu);
 
             item = new JMenuItem("Undo");
@@ -596,9 +626,9 @@ public class MainSwing {
             menu.add(item);
 
 
-            menu = new JMenu("Playlist");
-            menu.setBackground(Color.black);
-            menuBar.add(menu);
+            JMenu playlistMenu = new JMenu("Playlist");
+
+            menuBar.add(playlistMenu);
 
             item = new JMenuItem("Create New Playlist");
             item.addActionListener(new ActionListener() {
@@ -642,6 +672,8 @@ public class MainSwing {
                                 playlistNames.add(field.getText());
                                 initializeAddedPlaylists();
                                 loadPlaylistsToPanel();
+                                playlistAddSub.add(field.getText());
+                                playlistOpenSub.add(field.getText());
                                 //TODO-Create method that adds the newly added playlist to the menu a runtime
                                 dialog.setVisible(false);
                                 menuBar.revalidate();
@@ -651,20 +683,17 @@ public class MainSwing {
 
                 }
             });
-            menu.add(item);
-            menu.addSeparator();
-            JMenu subMenu = new JMenu("Open Playlist");
-            menu.add(subMenu);
-            JMenuItem playlistItem;
+            playlistMenu.add(item);
+            playlistMenu.addSeparator();
+            playlistMenu.add(playlistOpenSub);
+            JMenuItem playlistOpenItem;
             for (int i = 0; i < playlistNames.size(); i++) {
-                playlistItem = new JMenuItem(playlistNames.get(i));
-                if (playlistItem.getText().equals("default")) {
-                    playlistItem.setText("Library");
-                } else {
-
+                playlistOpenItem = new JMenuItem(playlistNames.get(i));
+                if (playlistOpenItem.getText().equals("default")) {
+                    playlistOpenItem.setText("Library");
                 }
                 int finalI = i;
-                playlistItem.addActionListener(new ActionListener() {
+                playlistOpenItem.addActionListener(new ActionListener() {
                     @Override
                     public void actionPerformed(ActionEvent e) {
                         if (playlistNames.get(finalI).equals("Library")) {
@@ -674,24 +703,21 @@ public class MainSwing {
                         }
                     }
                 });
-                subMenu.add(playlistItem);
+                playlistOpenSub.add(playlistOpenItem);
             }
 
-            subMenu = new JMenu("Add to Playlist");
-            menu.add(subMenu);
+            playlistMenu.add(playlistAddSub);
             for (int i = 0; i < playlistNames.size(); i++) {
                 item = new JMenuItem(playlistNames.get(i));
-                subMenu.add(item);
+                playlistAddSub.add(item);
             }
             menuBar.add(Box.createHorizontalGlue());
             createIconPNG(helpButton, help, 20, 20);
-            helpButton.setBackground(Color.black);
             menuBar.add(helpButton);
+
+
             return menuBar;
-
-
         }
-
-
     }
+
 }
