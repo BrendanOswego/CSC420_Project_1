@@ -1,16 +1,19 @@
 package main;
 
 
+import com.mpatric.mp3agic.InvalidDataException;
+import com.mpatric.mp3agic.Mp3File;
+import com.mpatric.mp3agic.UnsupportedTagException;
 import javazoom.jl.decoder.JavaLayerException;
-import javazoom.jl.player.Player;
 import net.miginfocom.swing.MigLayout;
+import org.apache.commons.io.FileUtils;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
+import javax.imageio.ImageIO;
 import javax.swing.*;
-import javax.swing.border.BevelBorder;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
@@ -19,8 +22,9 @@ import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.*;
 import java.net.URL;
-import java.sql.Time;
+import java.nio.file.Files;
 import java.util.*;
+import java.util.List;
 
 import static java.awt.Component.CENTER_ALIGNMENT;
 import static javax.swing.SwingConstants.CENTER;
@@ -41,7 +45,8 @@ import static javax.swing.SwingConstants.VERTICAL;
  */
 
 public class MainSwing {
-    private static final File file = new File("src/resources/json/library.json");
+    private static final File jsonFile = new File("src/resources/json/library.json");
+    private static final File musicDir = new File("src/resources/music");
 
     private static final String play = "play_button";
     private static final String pause = "pause_button";
@@ -51,7 +56,7 @@ public class MainSwing {
     private static final String help = "help_button";
 
 
-    private FileInputStream fileInputStream = new FileInputStream("src/resources/music//test.mp3");
+    private FileInputStream fileInputStream = new FileInputStream("src/resources/music/test.mp3");
 
     private JTable songTable = new JTable();
     private JFrame jFrame;
@@ -64,26 +69,26 @@ public class MainSwing {
     private JScrollPane scrollPane;
     private final JFileChooser fileChooser = new JFileChooser();
     private final FileNameExtensionFilter fileFilter = new FileNameExtensionFilter("MP3 Files", "mp3");
-    private JList<String> list;
-    private DefaultListModel<String> libraryModel = new DefaultListModel<>();
-    private JScrollPane playScroll;
-    JLabel currentTime = new JLabel();
+    private JLabel currentTime = new JLabel();
 
-    private String[] colNames = {"Song", "Artist", "Duration"};
-    private HashMap<String, Song> songList;
-    private ArrayList<String> playlistNames;
+    private ArrayList<String> playlistNames = new ArrayList<>();
 
-    MusicPlayer player = new MusicPlayer(fileInputStream);
+    private MusicPlayer player = new MusicPlayer(fileInputStream);
 
     private boolean isPlaying = false;
 
+    private CustomJSON json;
 
-    private JLabel playTest = new JLabel();
+    private String newTitle;
+    private String newArtist;
+    private String newDuration;
+
 
     public MainSwing() throws FileNotFoundException, JavaLayerException {
     }
 
     public static void main(String[] args) {
+
         EventQueue.invokeLater(new Runnable() {
             @Override
             public void run() {
@@ -99,6 +104,7 @@ public class MainSwing {
 
 
     private void createDesign() throws JavaLayerException {
+
         jFrame = new JFrame();
         jFrame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
@@ -176,8 +182,11 @@ public class MainSwing {
 
         //This has to be called before the songTable is added to the center panel
         //And anything that changes the songTable information as well i.e changing the name of a song
-        initializeJson();
-        initializeAddedPlaylists();
+
+        json = new CustomJSON(songTable, scrollPane, libraryPanel, title, artist,totalTime, playlistNames);
+        json.initializeJson();
+        json.initializeAddedPlaylists();
+
 
         centerPanel.add(scrollPane);
         soundControlPanel.add(previousButton);
@@ -197,7 +206,8 @@ public class MainSwing {
 
 
         libraryPanel.add(libraryHeader);
-        loadPlaylistsToPanel();
+        json.loadPlaylistsToPanel();
+
 
         mainPanel.add(infoPanel, BorderLayout.NORTH);
         mainPanel.add(centerPanel, BorderLayout.CENTER);
@@ -209,245 +219,14 @@ public class MainSwing {
         jFrame.setVisible(true);
         jFrame.setFocusable(true);
 
-        fillEmptyRows();
+        json.fillEmptyRows();
+        //player.play();
 
         System.out.println(player.getPlayerStatus());
 
-    }
-
-    private void setupTableMethods(DefaultTableModel dataModel) {
-        songTable.setDragEnabled(true);
-        songTable.setFocusable(false);
-        songTable.setRowSelectionAllowed(true);
-        songTable.setAutoCreateRowSorter(true);
-        songTable.setFillsViewportHeight(true);
-        songTable.setModel(dataModel);
-        songTable.setDefaultRenderer(Object.class, new CustomCellRender());
-        songTable.setComponentPopupMenu(showPopupMenu());
-        songTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-    }
-
-    private void initializeJson() {
-
-        ArrayList<String> jsonIdList = new ArrayList<>();
-        songList = new HashMap<>();
-
-        DefaultTableModel dataModel = new DefaultTableModel(colNames, 0);
-
-        JSONParser parser = new JSONParser();
-        Song tempSong;
-        try {
-            Object obj = parser.parse(new FileReader(file));
-            JSONObject jsonObject = (JSONObject) obj;
-            JSONObject library = (JSONObject) jsonObject.get("library");
-            JSONArray playlistArr = (JSONArray) library.get("playlist");
-
-            for (int i = 0; i < playlistArr.size(); i++) {
-                JSONObject playElement = (JSONObject) playlistArr.get(i);
-                String playlistName = (String) playElement.get("name");
-                if (playlistName.equalsIgnoreCase("default")) {
-                    JSONArray songArr = (JSONArray) playElement.get("song");
-                    for (int j = 0; j < songArr.size(); j++) {
-                        JSONObject songElement = (JSONObject) songArr.get(j);
-                        if (songElement != null) {
-                            String title = (String) songElement.get("title");
-                            String id = (String) songElement.get("id");
-                            jsonIdList.add(id);
-                            String artist = (String) songElement.get("artist");
-                            String duration = (String) songElement.get("duration");
-                            tempSong = new Song(id, title, artist, null, duration);
-                            songList.put(id, tempSong);
-                            Object[] rowObj = {tempSong.getTitle(), tempSong.getArtist(), tempSong.getDuration()};
-                            dataModel.addRow(rowObj);
-                            scrollPane.getViewport().revalidate();
-                        }
-
-                    }
-                }
-
-            }
-
-        } catch (IOException | ParseException e) {
-            e.printStackTrace();
-        }
-
-        setupTableMethods(dataModel);
-    }
-
-
-    private void loadPlaylistToTable(String name) {
-
-        DefaultTableModel dataModel = new DefaultTableModel(colNames, 0);
-
-        JSONParser parser = new JSONParser();
-
-        try {
-            Object obj = parser.parse(new FileReader(file));
-            JSONObject jsonObject = (JSONObject) obj;
-            JSONObject library = (JSONObject) jsonObject.get("library");
-            JSONArray playlistArr = (JSONArray) library.get("playlist");
-            for (int i = 0; i < playlistArr.size(); i++) {
-                JSONObject playElement = (JSONObject) playlistArr.get(i);
-                String playName = (String) playElement.get("name");
-                if (playName != null)
-                    if (name.equals(playName)) {
-                        JSONArray songArr = (JSONArray) playElement.get("song");
-                        for (int j = 0; j < songArr.size(); j++) {
-                            JSONObject songElement = (JSONObject) songArr.get(j);
-                            if (songElement != null) {
-                                String id = (String) songElement.get("id");
-                                System.out.println(id);
-                                if (songList.containsKey(id)) {
-                                    Object[] row = {songList.get(id).getTitle(), songList.get(id).getArtist(), songList.get(id).getDuration()};
-                                    dataModel.addRow(row);
-                                    scrollPane.getViewport().revalidate();
-                                }
-
-                            }
-                            fillEmptyRows();
-                        }
-                    }
-            }
-
-        } catch (IOException | ParseException e) {
-            e.printStackTrace();
-        }
-
-        setupTableMethods(dataModel);
-    }
-
-    private void initializeAddedPlaylists() {
-        playlistNames = new ArrayList<>();
-
-        JSONParser parser = new JSONParser();
-        System.out.println("Initialized loading playlist names");
-        try {
-            Object obj = parser.parse(new FileReader(file));
-            JSONObject jsonObject = (JSONObject) obj;
-            JSONObject library = (JSONObject) jsonObject.get("library");
-            JSONArray playlistArr = (JSONArray) library.get("playlist");
-            for (int i = 0; i < playlistArr.size(); i++) {
-                JSONObject playElement = (JSONObject) playlistArr.get(i);
-                String playName = (String) playElement.get("name");
-                if (playName != null) {
-                    playlistNames.add(playName);
-                }
-
-            }
-            System.out.println("Playlists added: " + playlistNames.toString());
-
-        } catch (IOException | ParseException e) {
-            e.printStackTrace();
-        }
-
 
     }
 
-    void addSelectedSongToPlaylist(Song song, String playlistName) {
-        //TODO- Create TransferHandler
-    }
-
-
-    private void createPlaylist(String name) {
-        JSONParser parser = new JSONParser();
-        Object obj = null;
-        try {
-            obj = parser.parse(new FileReader(file));
-        } catch (IOException | ParseException e) {
-            e.printStackTrace();
-        }
-
-        JSONObject jsonObject = (JSONObject) obj;
-        JSONObject library = (JSONObject) jsonObject.get("library");
-        JSONArray playArr = (JSONArray) library.get("playlist");
-
-        JSONObject newEntry = new JSONObject();
-        newEntry.put("song", new JSONArray());
-        newEntry.put("name", name);
-
-        playArr.add(newEntry);
-
-        try {
-            System.out.println("Writing to JSON");
-            FileWriter writer = new FileWriter(file);
-            writer.write(jsonObject.toJSONString());
-            writer.flush();
-            writer.close();
-            try {
-                Thread.sleep(40);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-            System.out.println("Wrote to JSON");
-            System.out.println(jsonObject.toString());
-
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-    }
-
-
-    private void loadPlaylistsToPanel() {
-        JSONParser parser = new JSONParser();
-        System.out.println("Initialized loading playlist names");
-        if (list == null) {
-            list = new JList<>(libraryModel);
-            playScroll = new JScrollPane(list);
-            list.setFont(list.getFont().deriveFont(15f));
-            list.setSelectionMode(ListSelectionModel.SINGLE_INTERVAL_SELECTION);
-            list.setLayoutOrientation(JList.VERTICAL);
-            list.setVisibleRowCount(-1);
-        } else {
-            list.removeAll();
-            libraryModel.removeAllElements();
-        }
-        try {
-            Object obj = parser.parse(new FileReader(file));
-            JSONObject jsonObject = (JSONObject) obj;
-            JSONObject library = (JSONObject) jsonObject.get("library");
-            JSONArray playlistArr = (JSONArray) library.get("playlist");
-            for (int i = 0; i < playlistArr.size(); i++) {
-                JSONObject playElement = (JSONObject) playlistArr.get(i);
-                String playName = (String) playElement.get("name");
-                JButton jButton;
-                if (playName.equals("default")) {
-                    jButton = new JButton("All Songs");
-                } else {
-                    jButton = new JButton(playName);
-                }
-                libraryModel.addElement(jButton.getText());
-                list.addMouseListener(mouseListener);
-                if ((int) jButton.getSize().getWidth() > (int) libraryPanel.getSize().getWidth()) {
-                    list.setFont(list.getFont().deriveFont(10f));
-                }
-            }
-            libraryPanel.add(playScroll);
-
-        } catch (IOException | ParseException e) {
-            e.printStackTrace();
-        }
-
-    }
-
-    private MouseListener mouseListener = new MouseAdapter() {
-        @Override
-        public void mouseClicked(MouseEvent e) {
-            JList theList = (JList) e.getSource();
-            if (e.getClickCount() == 2) {
-                int index = theList.locationToIndex(e.getPoint());
-                if (index >= 0) {
-                    String name = (String) theList.getModel().getElementAt(index);
-                    if (name.equals("All Songs")) {
-                        loadPlaylistToTable("default");
-                    } else {
-                        loadPlaylistToTable(name);
-                    }
-                    fillEmptyRows();
-                }
-            }
-        }
-    };
 
 
     private ActionListener previousListener = new ActionListener() {
@@ -487,46 +266,25 @@ public class MainSwing {
     };
 
 
-    private void fillEmptyRows() {
-        int rows = songTable.getRowCount();
-        int rowHeight = songTable.getRowHeight();
-        int tableHeight = songTable.getTableHeader().getHeight() + (rows * rowHeight);
-        while (tableHeight < scrollPane.getViewport().getHeight()) {
-            ((DefaultTableModel) songTable.getModel()).addRow(new Object[]{null, null, null});
-            tableHeight += rowHeight;
-        }
-    }
-
     private void showFileChooser() {
         fileChooser.setFileFilter(fileFilter);
         fileChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
         int returnVal = fileChooser.showOpenDialog(jFrame);
         if (returnVal == JFileChooser.APPROVE_OPTION) {
-
+            File f = new File(fileChooser.getSelectedFile().getPath());
+            try {
+                FileUtils.copyFileToDirectory(f, musicDir);
+                json.addSong(f.getName());
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            //addSong(fileChooser.getSelectedFile().getName());
+            System.out.println(fileChooser.getSelectedFile().getName());
         } else {
             System.out.println("File Chooser Cancelled by User");
         }
     }
 
-
-    private JPopupMenu showPopupMenu() {
-        JPopupMenu optionMenu = new JPopupMenu();
-        JMenuItem itemPlay = new JMenuItem("Play");
-        optionMenu.add(itemPlay);
-        JMenuItem itemAdd = new JMenuItem("Add To Playlist");
-        optionMenu.add(itemAdd);
-        JMenu subMenu = new JMenu();
-        for (int i = 0; i < 4; i++) {
-            JMenuItem item = new JMenuItem(String.valueOf(i));
-            subMenu.add(item);
-        }
-        JMenuItem itemInfo = new JMenuItem("Get Info");
-        optionMenu.add(itemInfo);
-        JMenuItem itemDelete = new JMenuItem("Delete");
-        optionMenu.add(itemDelete);
-
-        return optionMenu;
-    }
 
     private ImageIcon findImagePath(String path) {
         URL imgUrl = MainSwing.class.getResource(path);
@@ -592,6 +350,7 @@ public class MainSwing {
         return playlistNames.size();
     }
 
+
     /**
      * Inner class that creates the JMenuBar for the main JFrame
      */
@@ -604,6 +363,7 @@ public class MainSwing {
 
 
             JMenuBar menuBar = new JMenuBar();
+            menuBar.setPreferredSize(new Dimension((int) jFrame.getSize().getWidth(), 20));
 
             JMenu menu = new JMenu("File");
             menuBar.add(menu);
@@ -660,23 +420,26 @@ public class MainSwing {
                     cancel.addActionListener(new ActionListener() {
                         @Override
                         public void actionPerformed(ActionEvent e) {
-                            //TODO- Close Dialog and clear text
+                            dialog.dispose();
                         }
                     });
                     submit.addActionListener(new ActionListener() {
                         @Override
                         public void actionPerformed(ActionEvent e) {
-                            if (!field.getText().isEmpty()) {
+
+                            if (!field.getText().isEmpty() && !json.getPlaylistNames().contains(field.getText())) {
                                 System.out.println("Performing Action");
-                                createPlaylist(field.getText());
+                                json.createPlaylist(field.getText());
                                 playlistNames.add(field.getText());
-                                initializeAddedPlaylists();
-                                loadPlaylistsToPanel();
+                                json.initializeAddedPlaylists();
+                                json.loadPlaylistsToPanel();
                                 playlistAddSub.add(field.getText());
                                 playlistOpenSub.add(field.getText());
                                 //TODO-Create method that adds the newly added playlist to the menu a runtime
                                 dialog.setVisible(false);
                                 menuBar.revalidate();
+                            } else if (json.getPlaylistNames().contains(field.getText())) {
+                                JOptionPane.showMessageDialog(dialog, "Name already taken, please choose a different one");
                             }
                         }
                     });
@@ -687,8 +450,8 @@ public class MainSwing {
             playlistMenu.addSeparator();
             playlistMenu.add(playlistOpenSub);
             JMenuItem playlistOpenItem;
-            for (int i = 0; i < playlistNames.size(); i++) {
-                playlistOpenItem = new JMenuItem(playlistNames.get(i));
+            for (int i = 0; i < json.getPlaylistNames().size(); i++) {
+                playlistOpenItem = new JMenuItem(json.getPlaylistNames().get(i));
                 if (playlistOpenItem.getText().equals("default")) {
                     playlistOpenItem.setText("Library");
                 }
@@ -696,10 +459,10 @@ public class MainSwing {
                 playlistOpenItem.addActionListener(new ActionListener() {
                     @Override
                     public void actionPerformed(ActionEvent e) {
-                        if (playlistNames.get(finalI).equals("Library")) {
-                            loadPlaylistToTable(playlistNames.get(0));
+                        if (json.getPlaylistNames().get(finalI).equals("Library")) {
+                            json.loadPlaylistToTable(json.getPlaylistNames().get(0));
                         } else {
-                            loadPlaylistToTable(playlistNames.get(finalI));
+                            json.loadPlaylistToTable(json.getPlaylistNames().get(finalI));
                         }
                     }
                 });
@@ -707,14 +470,13 @@ public class MainSwing {
             }
 
             playlistMenu.add(playlistAddSub);
-            for (int i = 0; i < playlistNames.size(); i++) {
-                item = new JMenuItem(playlistNames.get(i));
+            for (int i = 0; i < json.getPlaylistNames().size(); i++) {
+                item = new JMenuItem(json.getPlaylistNames().get(i));
+                if (item.getText().equals("default")) {
+                    item.setText("Library");
+                }
                 playlistAddSub.add(item);
             }
-            menuBar.add(Box.createHorizontalGlue());
-            createIconPNG(helpButton, help, 20, 20);
-            menuBar.add(helpButton);
-
 
             return menuBar;
         }
