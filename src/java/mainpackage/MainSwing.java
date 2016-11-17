@@ -40,6 +40,8 @@ import static javax.swing.border.BevelBorder.RAISED;
 
 //TODO-Have a trail following the scrollbar
 
+//FIXME- Check the creation of ID's, right now it's wrong and will affect playlists
+
 /**
  * Main class for application, handles most of the functionality of the app including JSON Parsing, Swing Component creation, and MP3 Data conversion from ID3 Tags
  */
@@ -114,6 +116,20 @@ public class MainSwing {
     private void createDesign() throws JavaLayerException {
 
         jFrame = new JFrame();
+//        try {
+//            UIManager.setLookAndFeel("com.sun.java.swing.plaf.windows.WindowsLookAndFeel");
+//        } catch (ClassNotFoundException e) {
+//            e.printStackTrace();
+//        } catch (InstantiationException e) {
+//            e.printStackTrace();
+//        } catch (IllegalAccessException e) {
+//            e.printStackTrace();
+//        } catch (UnsupportedLookAndFeelException e) {
+//            e.printStackTrace();
+//        }
+
+        SwingUtilities.updateComponentTreeUI(jFrame);
+
         jFrame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
         jFrame.setSize(screenSize.width / 2, screenSize.height);
@@ -231,6 +247,8 @@ public class MainSwing {
         mainPanel.add(centerPanel, BorderLayout.CENTER);
         mainPanel.add(libraryPanel, BorderLayout.LINE_START);
 
+        //"com.sun.java.swing.plaf.mac.MacLookAndFeel"
+
         jFrame.setJMenuBar(topMenu.showMenuBar());
 
         jFrame.setContentPane(mainPanel);
@@ -297,9 +315,18 @@ public class MainSwing {
                         isPlaying = true;
                         createIconPNG(playPauseButton, pause, PIC_W, PIC_H);
                     } else {
-                        player.stop();
-                        isPlaying = false;
-                        createIconPNG(playPauseButton, play, PIC_W, PIC_H);
+                            String name = (String) songTable.getValueAt(0, 0);
+                            String totalTime = (String) songTable.getValueAt(0, 2);
+                            String artist = (String) songTable.getValueAt(0, 1);
+                            lblArtist.setText(artist);
+                            lblTitle.setText(name);
+                            lblTotalTime.setText(totalTime);
+                            FileInputStream inputStream = new FileInputStream("src/resources/music/" + name + ".mp3");
+                            player = new MusicPlayer(inputStream);
+                            songTable.setRowSelectionInterval(0,0);
+                            player.play();
+                            isPlaying = true;
+                            createIconPNG(playPauseButton, pause, PIC_W, PIC_H);
                     }
 
 
@@ -328,8 +355,10 @@ public class MainSwing {
                 }
             } else {
                 isPlaying = false;
-                createIconPNG(playPauseButton, play, PIC_W, PIC_H);
-                player.pause();
+                if (songTable.isRowSelected(songTable.getSelectedRow())) {
+                    createIconPNG(playPauseButton, pause, PIC_W, PIC_H);
+                    player.pause();
+                }
             }
             //System.out.println(player.getPostion());
         }
