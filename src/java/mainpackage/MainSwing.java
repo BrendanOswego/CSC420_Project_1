@@ -356,7 +356,7 @@ public class MainSwing {
             } else {
                 isPlaying = false;
                 if (songTable.isRowSelected(songTable.getSelectedRow())) {
-                    createIconPNG(playPauseButton, pause, PIC_W, PIC_H);
+                    createIconPNG(playPauseButton, play, PIC_W, PIC_H);
                     player.pause();
                 }
             }
