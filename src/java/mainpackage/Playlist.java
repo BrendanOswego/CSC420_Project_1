@@ -1,7 +1,6 @@
-package main;
+package mainpackage;
 
 import java.util.HashMap;
-import java.util.List;
 
 /**
  * Created by brendan<brendan.goldberg@cainkade.com> on 11/15/16.

@@ -1,4 +1,4 @@
-package main;
+package mainpackage;
 
 import com.mpatric.mp3agic.InvalidDataException;
 import com.mpatric.mp3agic.Mp3File;
@@ -11,7 +11,6 @@ import org.json.simple.parser.ParseException;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
-import java.awt.*;
 import java.awt.event.*;
 import java.io.*;
 import java.util.ArrayList;
@@ -28,9 +27,6 @@ public class CustomJSON {
     private String[] colNames = {"Song", "Artist", "Duration"};
 
 
-    private JLabel lblTitle;
-    private JLabel lblArtist;
-    private JLabel lblTotal;
 
     private boolean isPlaying = false;
 
@@ -48,14 +44,11 @@ public class CustomJSON {
 
     private MusicPlayer player;
 
-    public CustomJSON(JTable songTable, JScrollPane scrollPane, JPanel libraryPanel, JLabel lblTitle, JLabel lblArtist, JLabel lblTotal, ArrayList<String> playlistNames) {
-        this.lblTitle = lblTitle;
-        this.lblArtist = lblArtist;
+    public CustomJSON(JTable songTable, JScrollPane scrollPane, JPanel libraryPanel, ArrayList<String> playlistNames) {
+        this.libraryPanel = libraryPanel;
         this.songTable = songTable;
         this.scrollPane = scrollPane;
-        this.libraryPanel = libraryPanel;
         this.playlistNames = playlistNames;
-        this.lblTotal = lblTotal;
 
     }
 
@@ -70,7 +63,6 @@ public class CustomJSON {
         songTable.setDefaultRenderer(Object.class, new CustomCellRender());
         songTable.setComponentPopupMenu(showPopupMenu());
         songTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        songTable.addMouseListener(songSelectListener);
     }
 
     public void initializeJson() {
@@ -121,7 +113,7 @@ public class CustomJSON {
         }
 
         setupTableMethods(dataModel);
-        fillEmptyRows();
+        //fillEmptyRows();
     }
 
     public void addSong(String name) {
@@ -133,12 +125,7 @@ public class CustomJSON {
 
             String fileName = FilenameUtils.removeExtension(name);
             JSONParser parser = new JSONParser();
-            Object obj = null;
-            try {
-                obj = parser.parse(new FileReader(jsonFile));
-            } catch (IOException | ParseException e) {
-                e.printStackTrace();
-            }
+            Object obj = parser.parse(new FileReader(jsonFile));
 
             JSONObject jsonObject = (JSONObject) obj;
             JSONObject library = (JSONObject) jsonObject.get("library");
@@ -150,13 +137,13 @@ public class CustomJSON {
                 JSONObject newEntry = new JSONObject();
                 newEntry.put("title", fileName);
                 newEntry.put("id", Integer.toString(MAX_ID));
-                newEntry.put("duration",player.getDuration(name));
+                newEntry.put("duration", player.getDuration(name));
 
-                if(mp3.hasId3v1Tag()) {
+                if (mp3.hasId3v1Tag()) {
                     newEntry.put("artist", mp3.getId3v1Tag().getArtist());
                     songArr.add(newEntry);
 
-                }else if (mp3.hasId3v2Tag()) {
+                } else if (mp3.hasId3v2Tag()) {
                     newEntry.put("artist", mp3.getId3v2Tag().getArtist());
                     songArr.add(newEntry);
                 } else {
@@ -164,25 +151,16 @@ public class CustomJSON {
                 }
             }
 
-            try {
-                System.out.println("Writing to JSON");
-                FileWriter writer = new FileWriter(jsonFile);
-                writer.write(jsonObject.toJSONString());
-                writer.flush();
-                writer.close();
-                try {
-                    Thread.sleep(40);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-                System.out.println("Wrote to JSON");
-                System.out.println(jsonObject.toString());
 
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-
-        } catch (InvalidDataException | UnsupportedTagException | IOException e) {
+            System.out.println("Writing to JSON");
+            FileWriter writer = new FileWriter(jsonFile);
+            writer.write(jsonObject.toJSONString());
+            writer.flush();
+            writer.close();
+            Thread.sleep(40);
+        } catch (InvalidDataException | UnsupportedTagException | IOException | InterruptedException e) {
+            e.printStackTrace();
+        } catch (ParseException e) {
             e.printStackTrace();
         }
         initializeJson();
@@ -227,7 +205,7 @@ public class CustomJSON {
         }
 
         setupTableMethods(dataModel);
-        fillEmptyRows();
+       // fillEmptyRows();
     }
 
     public void initializeAddedPlaylists() {
@@ -267,34 +245,29 @@ public class CustomJSON {
         Object obj = null;
         try {
             obj = parser.parse(new FileReader(jsonFile));
-        } catch (IOException | ParseException e) {
-            e.printStackTrace();
-        }
 
-        JSONObject jsonObject = (JSONObject) obj;
-        JSONObject library = (JSONObject) jsonObject.get("library");
-        JSONArray playArr = (JSONArray) library.get("playlist");
+            JSONObject jsonObject = (JSONObject) obj;
+            JSONObject library = (JSONObject) jsonObject.get("library");
+            JSONArray playArr = (JSONArray) library.get("playlist");
 
-        JSONObject newEntry = new JSONObject();
-        newEntry.put("song", new JSONArray());
-        newEntry.put("name", name);
-        playArr.add(newEntry);
+            JSONObject newEntry = new JSONObject();
+            newEntry.put("song", new JSONArray());
+            newEntry.put("name", name);
+            playArr.add(newEntry);
 
-        try {
+
             System.out.println("Writing to JSON");
             FileWriter writer = new FileWriter(jsonFile);
             writer.write(jsonObject.toJSONString());
             writer.flush();
             writer.close();
-            try {
-                Thread.sleep(40);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
+
+            Thread.sleep(40);
+
             System.out.println("Wrote to JSON");
             System.out.println(jsonObject.toString());
 
-        } catch (IOException e) {
+        } catch (IOException | InterruptedException | ParseException e) {
             e.printStackTrace();
         }
 
@@ -396,35 +369,11 @@ public class CustomJSON {
                         loadPlaylistToTable(name);
                     }
                 }
-                fillEmptyRows();
+                //fillEmptyRows();
             }
         }
     };
 
-    public MouseListener songSelectListener = new MouseAdapter() {
-        public void mousePressed(MouseEvent me) {
-            JTable table = (JTable) me.getSource();
-            if (me.getClickCount() == 2) {
-                if (player != null && player.getPlayerStatus() == 1) {
-                    player.stop();
-                    player = null;
-                }
-                try {
-                    String name = (String) table.getValueAt(table.getSelectedRow(), 0);
-                    String totalTime = (String) table.getValueAt(table.getSelectedRow(), 2);
-                    String artist = (String)table.getValueAt(table.getSelectedRow(),1);
-                    lblArtist.setText(artist);
-                    lblTitle.setText(name);
-                    lblTotal.setText(totalTime);
-                    FileInputStream inputStream = new FileInputStream("src/resources/music/" + name + ".mp3");
-                    player = new MusicPlayer(inputStream);
-                    player.play();
-                } catch (FileNotFoundException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-    };
 
     public ArrayList<String> getPlaylistNames() {
         return playlistNames;

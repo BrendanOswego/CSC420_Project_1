@@ -1,4 +1,4 @@
-package main;
+package mainpackage;
 
 
 import javax.swing.table.DefaultTableModel;

@@ -1,34 +1,34 @@
-package main;
+package mainpackage;
 
 
-import com.mpatric.mp3agic.InvalidDataException;
-import com.mpatric.mp3agic.Mp3File;
-import com.mpatric.mp3agic.UnsupportedTagException;
 import javazoom.jl.decoder.JavaLayerException;
-import net.miginfocom.swing.MigLayout;
-import org.apache.commons.io.FileUtils;
-import org.json.simple.JSONArray;
-import org.json.simple.JSONObject;
-import org.json.simple.parser.JSONParser;
-import org.json.simple.parser.ParseException;
 
-import javax.imageio.ImageIO;
+import net.miginfocom.swing.MigLayout;
+
+import org.apache.commons.io.FileUtils;
+
+import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.FloatControl;
+import javax.sound.sampled.Line;
+import javax.sound.sampled.LineUnavailableException;
+import javax.sound.sampled.Mixer;
 import javax.swing.*;
+import javax.swing.border.Border;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 import javax.swing.filechooser.FileNameExtensionFilter;
-import javax.swing.table.DefaultTableModel;
+
 import java.awt.*;
 import java.awt.event.*;
-import java.beans.PropertyChangeEvent;
-import java.beans.PropertyChangeListener;
 import java.io.*;
 import java.net.URL;
-import java.nio.file.Files;
 import java.util.*;
-import java.util.List;
 
 import static java.awt.Component.CENTER_ALIGNMENT;
 import static javax.swing.SwingConstants.CENTER;
+import static javax.swing.SwingConstants.HORIZONTAL;
 import static javax.swing.SwingConstants.VERTICAL;
+import static javax.swing.border.BevelBorder.RAISED;
 
 //TODO- When all necessary methods are created, add Description comments for javadoc
 
@@ -47,6 +47,10 @@ import static javax.swing.SwingConstants.VERTICAL;
 public class MainSwing {
     private static final File jsonFile = new File("src/resources/json/library.json");
     private static final File musicDir = new File("src/resources/music");
+    private static final int PIC_W = 25;
+    private static final int PIC_H = 25;
+    private int BTN_W = 30;
+    private int BTN_H = 25;
 
     private static final String play = "play_button";
     private static final String pause = "pause_button";
@@ -56,26 +60,26 @@ public class MainSwing {
     private static final String help = "help_button";
 
 
-    private FileInputStream fileInputStream = new FileInputStream("src/resources/music/test.mp3");
-
+    JLabel lblTitle = new JLabel();
+    JLabel lblArtist = new JLabel();
+    JLabel lblTotalTime = new JLabel();
     private JTable songTable = new JTable();
     private JFrame jFrame;
-    private JPanel libraryPanel;
     private JButton playPauseButton;
-    private JButton previousButton;
-    private JButton nextButton;
-    private JButton shuffleButton;
     private JButton helpButton;
-    private JScrollPane scrollPane;
+    private JSlider volumeSlider;
+
     private final JFileChooser fileChooser = new JFileChooser();
     private final FileNameExtensionFilter fileFilter = new FileNameExtensionFilter("MP3 Files", "mp3");
     private JLabel currentTime = new JLabel();
 
+
     private ArrayList<String> playlistNames = new ArrayList<>();
 
-    private MusicPlayer player = new MusicPlayer(fileInputStream);
+    private MusicPlayer player;
 
     private boolean isPlaying = false;
+    private boolean isShuffle = false;
 
     private CustomJSON json;
 
@@ -84,19 +88,23 @@ public class MainSwing {
     private String newDuration;
 
 
-    public MainSwing() throws FileNotFoundException, JavaLayerException {
+    public MainSwing() {
+        try {
+            createDesign();
+        } catch (JavaLayerException e) {
+            e.printStackTrace();
+        }
+        songTable.addMouseListener(songSelectListener);
+
     }
+
 
     public static void main(String[] args) {
 
         EventQueue.invokeLater(new Runnable() {
             @Override
             public void run() {
-                try {
-                    new MainSwing().createDesign();
-                } catch (FileNotFoundException | JavaLayerException e) {
-                    e.printStackTrace();
-                }
+                new MainSwing();
             }
         });
 
@@ -109,46 +117,53 @@ public class MainSwing {
         jFrame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
         jFrame.setSize(screenSize.width / 2, screenSize.height);
-        JPanel infoPanel = new JPanel();
+        JPanel infoMidPanel = new JPanel();
         JPanel mainPanel = new JPanel();
-        libraryPanel = new JPanel();
+        JPanel libraryPanel = new JPanel();
         JPanel centerPanel = new JPanel();
         JPanel soundControlPanel = new JPanel();
         JPanel musicPanel = new JPanel(new FlowLayout());
 
+        JPanel infoMainPanel = new JPanel(new MigLayout("ali 50% 50%"));
+        JPanel infoLeftPanel = new JPanel();
+        JPanel infoRightPabnel = new JPanel();
+
+
         libraryPanel.setPreferredSize(new Dimension(120, jFrame.getHeight()));
-        infoPanel.setPreferredSize(new Dimension(jFrame.getWidth(), 110));
+        infoMidPanel.setPreferredSize(new Dimension(300, 100));
         mainPanel.setPreferredSize(new Dimension(jFrame.getWidth(), jFrame.getHeight()));
 
         BoxLayout centerLayout = new BoxLayout(centerPanel, VERTICAL);
         BorderLayout mainLayout = new BorderLayout();
         FlowLayout playerLayout = new FlowLayout();
         BoxLayout westLayout = new BoxLayout(libraryPanel, BoxLayout.Y_AXIS);
-        BoxLayout verticalLayout = new BoxLayout(infoPanel, BoxLayout.Y_AXIS);
+        BoxLayout verticalLayout = new BoxLayout(infoMidPanel, BoxLayout.Y_AXIS);
 
         mainPanel.setLayout(mainLayout);
         soundControlPanel.setLayout(playerLayout);
         libraryPanel.setLayout(westLayout);
         centerPanel.setLayout(centerLayout);
-        infoPanel.setLayout(verticalLayout);
+        infoMidPanel.setLayout(verticalLayout);
 
         JLabel libraryHeader = new JLabel("Library");
         JLabel artistHeader = new JLabel("Artist");
-        JLabel totalTime = new JLabel("Total Time");
-        JLabel title = new JLabel("Title");
-        JLabel artist = new JLabel("Artist");
         JSlider musicSlider = new JSlider(JSlider.HORIZONTAL);
-        previousButton = new JButton();
+        JButton previousButton = new JButton();
         playPauseButton = new JButton();
-        nextButton = new JButton();
-        shuffleButton = new JButton();
+        JButton nextButton = new JButton();
+        JButton shuffleButton = new JButton();
         helpButton = new JButton();
 
-        createIconPNG(previousButton, previous, 20, 20);
-        createIconPNG(playPauseButton, play, 20, 20);
-        createIconPNG(nextButton, next, 20, 20);
-        createIconPNG(shuffleButton, shuffle, 20, 20);
-        createIconPNG(helpButton, help, 20, 20);
+        previousButton.setPreferredSize(new Dimension(BTN_W, BTN_H));
+        playPauseButton.setPreferredSize(new Dimension(BTN_W, BTN_H));
+        nextButton.setPreferredSize(new Dimension(BTN_W, BTN_H));
+        shuffleButton.setPreferredSize(new Dimension(BTN_W, BTN_H));
+
+        createIconPNG(previousButton, previous, PIC_W, PIC_H);
+        createIconPNG(playPauseButton, play, PIC_W, PIC_H);
+        createIconPNG(nextButton, next, PIC_W, PIC_H);
+        createIconPNG(shuffleButton, shuffle, PIC_W, PIC_H);
+        createIconPNG(helpButton, help, PIC_W, PIC_H);
 
         previousButton.addActionListener(previousListener);
         playPauseButton.addActionListener(playPauseListener);
@@ -157,14 +172,13 @@ public class MainSwing {
 
 
         musicSlider.setValue(0);
-        musicSlider.setPreferredSize(new Dimension(250, 20));
 
-        title.setFont(title.getFont().deriveFont(15f));
-        artist.setFont(artist.getFont().deriveFont(15f));
+        lblTitle.setFont(lblTitle.getFont().deriveFont(15f));
+        lblArtist.setFont(lblArtist.getFont().deriveFont(15f));
         libraryHeader.setFont(libraryHeader.getFont().deriveFont(15f));
 
-        title.setAlignmentX(CENTER_ALIGNMENT);
-        artist.setAlignmentX(CENTER_ALIGNMENT);
+        lblTitle.setAlignmentX(CENTER_ALIGNMENT);
+        lblArtist.setAlignmentX(CENTER_ALIGNMENT);
         libraryHeader.setAlignmentX(CENTER_ALIGNMENT);
         artistHeader.setAlignmentX(CENTER_ALIGNMENT);
         libraryHeader.setHorizontalAlignment(CENTER);
@@ -174,16 +188,16 @@ public class MainSwing {
         CustomMenuBar topMenu = new CustomMenuBar();
 
         int songTableWidth = (int) centerPanel.getSize().getWidth() - (int) libraryPanel.getSize().getWidth();
-        int songTableHeight = (int) centerPanel.getSize().getHeight() - (int) infoPanel.getSize().getHeight();
+        int songTableHeight = (int) centerPanel.getSize().getHeight() - (int) infoMidPanel.getSize().getHeight();
         songTable.setPreferredSize(new Dimension(songTableWidth, songTableHeight));
 
-        scrollPane = new JScrollPane(songTable);
+        JScrollPane scrollPane = new JScrollPane(songTable);
         scrollPane.setPreferredSize(new Dimension((int) jFrame.getSize().getWidth(), (int) jFrame.getSize().getHeight()));
 
         //This has to be called before the songTable is added to the center panel
         //And anything that changes the songTable information as well i.e changing the name of a song
 
-        json = new CustomJSON(songTable, scrollPane, libraryPanel, title, artist,totalTime, playlistNames);
+        json = new CustomJSON(songTable, scrollPane, libraryPanel, playlistNames);
         json.initializeJson();
         json.initializeAddedPlaylists();
 
@@ -196,20 +210,24 @@ public class MainSwing {
 
         musicPanel.add(currentTime);
         musicPanel.add(musicSlider);
-        musicPanel.add(totalTime);
+        musicPanel.add(lblTotalTime);
         musicPanel.setAlignmentX(CENTER_ALIGNMENT);
 
-        infoPanel.add(title);
-        infoPanel.add(artist);
-        infoPanel.add(soundControlPanel);
-        infoPanel.add(musicPanel);
+        infoMidPanel.add(lblTitle);
+        infoMidPanel.add(lblArtist);
+        infoMidPanel.add(soundControlPanel);
+        infoMidPanel.add(musicPanel);
+
+        infoMidPanel.setBorder(BorderFactory.createBevelBorder(RAISED));
+
+        infoMainPanel.add(infoMidPanel);
 
 
         libraryPanel.add(libraryHeader);
         json.loadPlaylistsToPanel();
 
 
-        mainPanel.add(infoPanel, BorderLayout.NORTH);
+        mainPanel.add(infoMainPanel, BorderLayout.NORTH);
         mainPanel.add(centerPanel, BorderLayout.CENTER);
         mainPanel.add(libraryPanel, BorderLayout.LINE_START);
 
@@ -219,27 +237,77 @@ public class MainSwing {
         jFrame.setVisible(true);
         jFrame.setFocusable(true);
 
-        json.fillEmptyRows();
-        //player.play();
-
-        System.out.println(player.getPlayerStatus());
-
-
+        //json.fillEmptyRows();
     }
-
 
 
     private ActionListener previousListener = new ActionListener() {
         @Override
         public void actionPerformed(ActionEvent e) {
-            //TODO-Add functionality to play previous song...maybe have separate class for MP3 data?
+
+            if (!isShuffle()) {
+                if (player != null && player.getPlayerStatus() == 1) {
+                    player.stop();
+                    player = null;
+                }
+                try {
+                    if (songTable.getSelectedRow() > -1) {
+                        String name = (String) songTable.getValueAt(songTable.getSelectedRow() - 1, 0);
+                        String totalTime = (String) songTable.getValueAt(songTable.getSelectedRow() - 1, 2);
+                        String artist = (String) songTable.getValueAt(songTable.getSelectedRow() - 1, 1);
+                        lblArtist.setText(artist);
+                        lblTitle.setText(name);
+                        lblTotalTime.setText(totalTime);
+                        FileInputStream inputStream = new FileInputStream("src/resources/music/" + name + ".mp3");
+                        player = new MusicPlayer(inputStream);
+                        songTable.setRowSelectionInterval(songTable.getSelectedRow() - 1, songTable.getSelectedRow() - 1);
+                    }
+                    player.play();
+                    isPlaying = true;
+
+                    createIconPNG(playPauseButton, pause, PIC_W, PIC_H);
+                } catch (FileNotFoundException ev) {
+                    ev.printStackTrace();
+                }
+            }
         }
     };
 
     private ActionListener nextListener = new ActionListener() {
         @Override
         public void actionPerformed(ActionEvent e) {
-            //TODO-Add functionality to play next song...maybe have separate class for MP3 data?
+
+            if (!isShuffle()) {
+                if (player != null && player.getPlayerStatus() == 1) {
+                    player.stop();
+                    player = null;
+                }
+                try {
+                    if (songTable.getSelectedRow() < songTable.getRowCount() - 1) {
+                        String name = (String) songTable.getValueAt(songTable.getSelectedRow() + 1, 0);
+                        String totalTime = (String) songTable.getValueAt(songTable.getSelectedRow() + 1, 2);
+                        String artist = (String) songTable.getValueAt(songTable.getSelectedRow() + 1, 1);
+                        lblArtist.setText(artist);
+                        lblTitle.setText(name);
+                        lblTotalTime.setText(totalTime);
+                        FileInputStream inputStream = new FileInputStream("src/resources/music/" + name + ".mp3");
+                        player = new MusicPlayer(inputStream);
+                        songTable.setRowSelectionInterval(songTable.getSelectedRow() + 1, songTable.getSelectedRow() + 1);
+                        player.play();
+                        isPlaying = true;
+                        createIconPNG(playPauseButton, pause, PIC_W, PIC_H);
+                    } else {
+                        player.stop();
+                        isPlaying = false;
+                        createIconPNG(playPauseButton, play, PIC_W, PIC_H);
+                    }
+
+
+                } catch (FileNotFoundException ev) {
+                    ev.printStackTrace();
+                }
+            }
+
         }
     };
     private ActionListener shuffleListener = new ActionListener() {
@@ -252,16 +320,44 @@ public class MainSwing {
     private ActionListener playPauseListener = new ActionListener() {
         @Override
         public void actionPerformed(ActionEvent e) {
-            if (!isPlaying) {
-                createIconPNG(playPauseButton, pause, 20, 20);
+            if (!isPlaying()) {
                 isPlaying = true;
-                player.play();
+                if (songTable.isRowSelected(songTable.getSelectedRow())) {
+                    createIconPNG(playPauseButton, pause, PIC_W, PIC_H);
+                    player.play();
+                }
             } else {
-                createIconPNG(playPauseButton, play, 20, 20);
                 isPlaying = false;
+                createIconPNG(playPauseButton, play, PIC_W, PIC_H);
                 player.pause();
             }
-            System.out.println(player.getPostion());
+            //System.out.println(player.getPostion());
+        }
+    };
+    private MouseListener songSelectListener = new MouseAdapter() {
+        public void mousePressed(MouseEvent me) {
+            JTable table = (JTable) me.getSource();
+            if (me.getClickCount() == 2) {
+                if (player != null && player.getPlayerStatus() == 1) {
+                    player.stop();
+                    player = null;
+                }
+                try {
+                    String name = (String) table.getValueAt(table.getSelectedRow(), 0);
+                    String totalTime = (String) table.getValueAt(table.getSelectedRow(), 2);
+                    String artist = (String) table.getValueAt(table.getSelectedRow(), 1);
+                    lblArtist.setText(artist);
+                    lblTitle.setText(name);
+                    lblTotalTime.setText(totalTime);
+                    FileInputStream inputStream = new FileInputStream("src/resources/music/" + name + ".mp3");
+                    player = new MusicPlayer(inputStream);
+                    player.play();
+                    isPlaying = true;
+                    createIconPNG(playPauseButton, pause, PIC_W, PIC_H);
+                } catch (FileNotFoundException e) {
+                    e.printStackTrace();
+                }
+            }
         }
     };
 
@@ -346,13 +442,21 @@ public class MainSwing {
         this.playlistNames = playlistNames;
     }
 
+    private boolean isPlaying() {
+        return this.isPlaying;
+    }
+
+    private boolean isShuffle() {
+        return this.isShuffle;
+    }
+
     public int getPlaylistSize() {
         return playlistNames.size();
     }
 
 
     /**
-     * Inner class that creates the JMenuBar for the main JFrame
+     * Inner class that creates the JMenuBar for the mainpackage JFrame
      */
     private class CustomMenuBar extends JMenuBar {
 
@@ -363,7 +467,7 @@ public class MainSwing {
 
 
             JMenuBar menuBar = new JMenuBar();
-            menuBar.setPreferredSize(new Dimension((int) jFrame.getSize().getWidth(), 20));
+            menuBar.setPreferredSize(new Dimension((int) jFrame.getSize().getWidth(), 35));
 
             JMenu menu = new JMenu("File");
             menuBar.add(menu);
@@ -477,9 +581,9 @@ public class MainSwing {
                 }
                 playlistAddSub.add(item);
             }
-
             return menuBar;
         }
     }
+
 
 }

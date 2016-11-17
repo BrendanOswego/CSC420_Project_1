@@ -1,1 +1,3 @@
 .idea/**
+/src/resources/json/library.json
+/src/resources/music
