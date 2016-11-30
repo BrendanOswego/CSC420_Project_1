@@ -27,7 +27,6 @@ public class CustomJSON {
     private String[] colNames = {"Song", "Artist", "Duration"};
 
 
-
     private boolean isPlaying = false;
 
     private JTable songTable;
@@ -205,7 +204,7 @@ public class CustomJSON {
         }
 
         setupTableMethods(dataModel);
-       // fillEmptyRows();
+        // fillEmptyRows();
     }
 
     public void initializeAddedPlaylists() {
