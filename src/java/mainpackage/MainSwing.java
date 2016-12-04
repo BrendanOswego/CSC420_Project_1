@@ -14,6 +14,7 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.ListIterator;
+import java.util.Random;
 
 import static java.awt.Component.CENTER_ALIGNMENT;
 import static javax.swing.SwingConstants.*;
@@ -82,7 +83,8 @@ public class MainSwing {
     private String newTitle;
     private String newArtist;
     private String newDuration;
-
+    private ArrayList<Integer> songQueue;
+    private int currentIndex=-1;
 
     public MainSwing() {
         try {
@@ -235,8 +237,8 @@ public class MainSwing {
         jFrame.setContentPane(mainPanel);
         jFrame.setVisible(true);
         jFrame.setFocusable(true);
-
         //json.fillEmptyRows();
+        songQueue = new ArrayList<>();
         createMiniPlayer();
     }
 
@@ -247,62 +249,78 @@ public class MainSwing {
         miniPlayer.setFocusable(true);
         miniPlayer.setResizable(false);
         miniPlayer.setJMenuBar(miniMenu.showMenuBar());
+        miniPlayer.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
         /*
         We need to decide what functionality we want to have when the user closes out of the miniplayer.
         Should it default back to the original player or close down altogether?
          */
 
     }
-
-
-    private ActionListener previousListener = new ActionListener() {
-        @Override
-        public void actionPerformed(ActionEvent e) {
-            songIterator = songList.listIterator();
-
-            if (!isShuffle()) {
-                if (player != null && player.getPlayerStatus() == 1) {
-                    player.stop();
-                    player = null;
-                }
-                try {
-                    if (songTable.getSelectedRow() > -1) {
-                        String name = (String) songTable.getValueAt(songTable.getSelectedRow() - 1, 0);
-                        String totalTime = (String) songTable.getValueAt(songTable.getSelectedRow() - 1, 2);
-                        String artist = (String) songTable.getValueAt(songTable.getSelectedRow() - 1, 1);
-                        lblArtist.setText(artist);
-                        lblTitle.setText(name);
-                        lblTotalTime.setText(totalTime);
-                        FileInputStream inputStream = new FileInputStream("src/resources/music/" + name + ".mp3");
-                        player = new MusicPlayer(inputStream);
-                        songTable.setRowSelectionInterval(songTable.getSelectedRow() - 1, songTable.getSelectedRow() - 1);
-                    }
-                    player.play();
-                    isPlaying = true;
-
-                    createIconPNG(playPauseButton, pause, PIC_W, PIC_H);
-                } catch (FileNotFoundException ev) {
-                    ev.printStackTrace();
-                }
+private ActionListener previousListener = new ActionListener(){
+    @Override
+    public void actionPerformed(ActionEvent e){
+        if (!isShuffle()) { //if shuffle is off
+            if (player != null && player.getPlayerStatus() == 1) {
+                player.stop();
+                player = null;
             }
-        }
-    };
+            try {
+                if (songTable.getSelectedRow() > 0) {
+                    String name = (String) songTable.getValueAt(songTable.getSelectedRow() - 1, 0);
+                    String totalTime = (String) songTable.getValueAt(songTable.getSelectedRow() - 1, 2);
+                    String artist = (String) songTable.getValueAt(songTable.getSelectedRow() - 1, 1);
+                    lblArtist.setText(artist);
+                    lblTitle.setText(name);
+                    lblTotalTime.setText(totalTime);
+                    FileInputStream inputStream = new FileInputStream("src/resources/music/" + name + ".mp3");
+                    player = new MusicPlayer(inputStream);
+                    songTable.setRowSelectionInterval(songTable.getSelectedRow() - 1, songTable.getSelectedRow() - 1);
+                    currentIndex=songTable.getRowCount()-1;
 
-    private ActionListener nextListener = new ActionListener() {
+                } else {
+                    System.out.println(songTable.getRowCount()-1);
+                    String name = (String) songTable.getValueAt(songTable.getRowCount()-1, 0);
+                    String totalTime = (String) songTable.getValueAt(songTable.getRowCount()-1, 2);
+                    String artist = (String) songTable.getValueAt(songTable.getRowCount()-1, 1);
+                    lblArtist.setText(artist);
+                    lblTitle.setText(name);
+                    lblTotalTime.setText(totalTime);
+                    FileInputStream inputStream = new FileInputStream("src/resources/music/" + name + ".mp3");
+                    player = new MusicPlayer(inputStream);
+                    System.out.println(songTable.getRowCount()-1);
+                    songTable.setRowSelectionInterval(songTable.getRowCount()-1, songTable.getRowCount()-1);
+                    currentIndex=songTable.getRowCount()-1;
+
+                    player.play();
+                    currentIndex=songTable.getRowCount()-1;
+                    isPlaying = true;
+                    createIconPNG(playPauseButton, pause, PIC_W, PIC_H);
+
+                }
+                player.play();
+                isPlaying = true;
+
+                createIconPNG(playPauseButton, pause, PIC_W, PIC_H);
+            } catch (FileNotFoundException ev) {
+                ev.printStackTrace();
+            }
+        } else { //if shuffle is on
+            //if No previous item in songQueue do nothing
+            //else play previous
+        }
+    }
+};
+
+    private ActionListener nextListener = new ActionListener(){
         @Override
-        public void actionPerformed(ActionEvent e) {
-            songList.add(songTable.getSelectedRow());
-            songIterator = songList.listIterator();
-            songIterator.next();
-            int previous = (int) songIterator.previous();
-            System.out.println(previous);
-            if (!isShuffle()) {
+        public void actionPerformed(ActionEvent e){
+            if(!isShuffle()){  // If Not on shuffle mode
                 if (player != null && player.getPlayerStatus() == 1) {
                     player.stop();
                     player = null;
                 }
-                try {
-                    if (songTable.getSelectedRow() < songTable.getRowCount() - 1) {
+                try{
+                    if(songTable.getSelectedRow() < songTable.getRowCount() - 1) { //If Not on shuffle mode && If no row is selected
                         String name = (String) songTable.getValueAt(songTable.getSelectedRow() + 1, 0);
                         String totalTime = (String) songTable.getValueAt(songTable.getSelectedRow() + 1, 2);
                         String artist = (String) songTable.getValueAt(songTable.getSelectedRow() + 1, 1);
@@ -312,10 +330,11 @@ public class MainSwing {
                         FileInputStream inputStream = new FileInputStream("src/resources/music/" + name + ".mp3");
                         player = new MusicPlayer(inputStream);
                         songTable.setRowSelectionInterval(songTable.getSelectedRow() + 1, songTable.getSelectedRow() + 1);
+                        currentIndex=songTable.getRowCount()-1;
                         player.play();
                         isPlaying = true;
                         createIconPNG(playPauseButton, pause, PIC_W, PIC_H);
-                    } else {
+                    } else { //If Not on shuffle mode && If a row is selected
                         String name = (String) songTable.getValueAt(0, 0);
                         String totalTime = (String) songTable.getValueAt(0, 2);
                         String artist = (String) songTable.getValueAt(0, 1);
@@ -329,19 +348,72 @@ public class MainSwing {
                         isPlaying = true;
                         createIconPNG(playPauseButton, pause, PIC_W, PIC_H);
                     }
-
-
                 } catch (FileNotFoundException ev) {
-                    ev.printStackTrace();
+                        ev.printStackTrace();
+                    }
+            } else { // If on shuffle mode
+                if (player != null && player.getPlayerStatus() == 1) {
+                    player.stop();
+                    player = null;
                 }
-            }
+                if(songQueue.size()==0) { // If on shuffle mode && If you just turned on shuffle mode
+                    try {
+                    Random r = new Random();
+                    int randomSpot = r.nextInt(songTable.getRowCount());
+                    System.out.println("Random Spot " +randomSpot);
+                    System.out.println("Row Count " + songTable.getRowCount());
+                    String name = (String) songTable.getValueAt(randomSpot, 0);
+                    String totalTime = (String) songTable.getValueAt(randomSpot, 2);
+                    String artist = (String) songTable.getValueAt(randomSpot, 1);
+                    lblArtist.setText(artist);
+                    lblTitle.setText(name);
+                    lblTotalTime.setText(totalTime);
+                    FileInputStream inputStream = new FileInputStream("src/resources/music/" + name + ".mp3");
+                    player = new MusicPlayer(inputStream);
+                    songTable.setRowSelectionInterval(randomSpot, randomSpot);
 
+                        songQueue.add(randomSpot);
+                        currentIndex=songQueue.size();
+                        System.out.println("SongQueue length: "+songQueue.size());
+                        System.out.println("SongQueue last value: "+songQueue.get(songQueue.size()-1));
+                        player.play();
+                    isPlaying = true;
+                    createIconPNG(playPauseButton, pause, PIC_W, PIC_H);
+                } catch (FileNotFoundException ev){
+                        ev.printStackTrace();
+                    }
+                } else { //If shuffle mode was already one.
+                    if(currentIndex==songQueue.size()){//if there is nothing else in the queue
+
+                    }
+                    // play Random
+                    // update currentSong from playQueue
+                    // if songQueue has Next Play Next
+                }
+
+            }
         }
     };
+
     private ActionListener shuffleListener = new ActionListener() {
         @Override
         public void actionPerformed(ActionEvent e) {
             //TODO-Add shuffle functionality
+            if(isShuffle()){
+                isShuffle=false;
+                System.out.println("isShuffle "+isShuffle);
+            }
+            else{
+                isShuffle=true;
+                System.out.println("isShuffle "+isShuffle);
+
+            }
+            System.out.println("songQueue before: "+ songQueue.size());
+            System.out.println("Current Song index before: "+ currentIndex);
+            songQueue.clear();
+            currentIndex=-1;
+            System.out.println("songQueue after: "+ songQueue.size());
+            System.out.println("Current Song index after: "+ currentIndex);
         }
     };
 
@@ -352,6 +424,7 @@ public class MainSwing {
                 createIconPNG(playPauseButton, pause, PIC_W, PIC_H);
                 playSong(0);
                 songTable.setRowSelectionInterval(0, 0);
+                currentIndex=songTable.getRowCount()-1;
                 player.play();
                 return;
             }
