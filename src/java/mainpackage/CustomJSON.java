@@ -9,9 +9,12 @@ import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
+import javax.imageio.ImageIO;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
+import java.awt.*;
 import java.awt.event.*;
+import java.awt.image.BufferedImage;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -39,6 +42,7 @@ public class CustomJSON {
     private JPanel libraryPanel;
     private JScrollPane playScroll;
 
+    List<String> albumImages = new ArrayList<>();
     private int MAX_ID = 0;
 
     private MusicPlayer player;
@@ -92,7 +96,28 @@ public class CustomJSON {
                             jsonIdList.add(id);
                             String artist = (String) songElement.get("artist");
                             String duration = (String) songElement.get("duration");
-                            tempSong = new Song(id, title, artist, null, duration);
+                            String album = (String) songElement.get("album");
+                            try {
+                                Mp3File mp3 = new Mp3File("src/resources/music/" + title + ".mp3");
+                                if (mp3.hasId3v2Tag()) {
+                                    byte[] imageData = mp3.getId3v2Tag().getAlbumImage();
+                                    if(imageData != null) {
+                                        System.out.println(mp3.getId3v2Tag().getAlbum());
+                                        BufferedImage img = ImageIO.read(new ByteArrayInputStream(imageData));
+                                        File imageOutput = new File("src/resources/images/albums/" + mp3.getId3v2Tag().getAlbum() + ".png");
+                                        String albumName = mp3.getId3v2Tag().getAlbum();
+                                        if (!albumImages.contains(albumName)) {
+                                            albumImages.add(albumName);
+                                        }
+                                        if (!imageOutput.exists()) {
+                                            ImageIO.write(img, "jpg", imageOutput);
+                                        }
+                                    }
+                                }
+                            } catch (UnsupportedTagException | InvalidDataException e) {
+                                e.printStackTrace();
+                            }
+                            tempSong = new Song(id, title, artist, album, duration);
                             songList.put(id, tempSong);
                             Playlist tempPlaylist = new Playlist(playlistName, songList);
                             playlists.add(tempPlaylist);
@@ -137,13 +162,18 @@ public class CustomJSON {
                 newEntry.put("title", fileName);
                 newEntry.put("id", Integer.toString(MAX_ID));
                 newEntry.put("duration", player.getDuration(name));
-
                 if (mp3.hasId3v1Tag()) {
                     newEntry.put("artist", mp3.getId3v1Tag().getArtist());
                     songArr.add(newEntry);
-
-                } else if (mp3.hasId3v2Tag()) {
+                }
+                if (mp3.hasId3v2Tag()) {
                     newEntry.put("artist", mp3.getId3v2Tag().getArtist());
+                    byte[] imageData = mp3.getId3v2Tag().getAlbumImage();
+                    BufferedImage img = ImageIO.read(new ByteArrayInputStream(imageData));
+                    File imageOutput = new File("src/resources/images/albums/" + mp3.getId3v2Tag().getAlbum() + ".png");
+                    System.out.println(imageOutput.getName());
+                    ImageIO.write(img, "jpg", imageOutput);
+                    newEntry.put("album", mp3.getId3v2Tag().getAlbum());
                     songArr.add(newEntry);
                 } else {
                     System.err.println("File is not MP3 Format");
@@ -379,4 +409,18 @@ public class CustomJSON {
     }
 
 
+    public HashMap<String, Song> getSongList() {
+        return songList;
+    }
+
+    public Image getAlbumImage(String albumName) {
+        File imageOutput = new File("src/resources/images/albums/" + albumName + ".png");
+        try {
+            Image image = ImageIO.read(imageOutput);
+            return image;
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
 }

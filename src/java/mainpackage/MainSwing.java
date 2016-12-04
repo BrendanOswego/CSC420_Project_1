@@ -14,6 +14,7 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.ListIterator;
+import java.util.Random;
 
 import static java.awt.Component.CENTER_ALIGNMENT;
 import static javax.swing.SwingConstants.*;
@@ -61,6 +62,7 @@ public class MainSwing {
     private JButton playPauseButton;
     private JButton helpButton;
     private JSlider volumeSlider;
+    private AlbumPanel albumPanel;
 
     private final JFileChooser fileChooser = new JFileChooser();
     private final FileNameExtensionFilter fileFilter = new FileNameExtensionFilter("MP3 Files", "mp3");
@@ -115,14 +117,14 @@ public class MainSwing {
         jFrame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
         jFrame.setSize(screenSize.width / 2, screenSize.height);
-        infoMidPanel = new JPanel();
+        infoMidPanel = new JPanel(new MigLayout("", "[][][]", "[][][][]"));
         JPanel mainPanel = new JPanel();
         JPanel libraryPanel = new JPanel();
         JPanel centerPanel = new JPanel();
         JPanel soundControlPanel = new JPanel();
         JPanel musicPanel = new JPanel(new FlowLayout());
 
-        infoMainPanel = new JPanel(new MigLayout("ali 50% 50%, debug"));
+        infoMainPanel = new JPanel(new MigLayout("ali 50% 50%", "[][][]",""));
         JPanel infoLeftPanel = new JPanel();
         JPanel infoRightPabnel = new JPanel();
 
@@ -200,6 +202,11 @@ public class MainSwing {
         json.initializeAddedPlaylists();
 
 
+        albumPanel = new AlbumPanel(this);
+        albumPanel.setPreferredSize(new Dimension(150,110));
+        albumPanel.setBorder(BorderFactory.createLineBorder(Color.BLACK));
+
+
         centerPanel.add(scrollPane);
         soundControlPanel.add(previousButton);
         soundControlPanel.add(playPauseButton);
@@ -210,16 +217,20 @@ public class MainSwing {
         musicPanel.add(musicSlider);
         musicPanel.add(lblTotalTime);
         musicPanel.setAlignmentX(CENTER_ALIGNMENT);
-        infoMidPanel.add(lblTitle);
-        infoMidPanel.add(lblArtist);
-        infoMidPanel.add(soundControlPanel);
-        infoMidPanel.add(musicPanel);
+
+        infoMidPanel.add(lblTitle, "cell 1 0");
+        infoMidPanel.add(lblArtist, "cell 1 1");
+        infoMidPanel.add(soundControlPanel, "cell 1 2");
+        infoMidPanel.add(musicPanel, "cell 1 3");
         //infoMidPanel.setBackground(Color.GREEN);
 
         //infoMidPanel.setBorder(BorderFactory.createBevelBorder(RAISED));
-        infoMainPanel.add(infoMidPanel);
+        infoMainPanel.add(infoMidPanel,"cell 1 0");
+        infoMainPanel.add(albumPanel, "cell 2 0");
 
-
+        albumPanel.setAlbumString("Ghosts N Stuff - Single");
+        System.out.println(albumPanel.getAlbumString());
+        albumPanel.repaint();
         libraryPanel.add(libraryHeader);
         json.loadPlaylistsToPanel();
 
@@ -392,6 +403,7 @@ public class MainSwing {
             player.stop();
             player = null;
         }
+
         try {
             String name = (String) songTable.getValueAt(row, 0);
             String totalTime = (String) songTable.getValueAt(row, 2);
@@ -409,6 +421,42 @@ public class MainSwing {
         }
     }
 
+    public void shufflePlay(int row) {
+        if (player != null && player.getPlayerStatus() == 1) {
+            player.stop();
+            player = null;
+        }
+
+
+        Random r = new Random(songTable.getRowCount());
+        LinkedList<Integer> shuffleList = new LinkedList<>();
+
+        for (int i = 0; i < songTable.getRowCount(); i++) {
+            shuffleList.add(r.nextInt());
+        }
+
+
+//        try {
+//            String name = (String) songTable.getValueAt(row, 0);
+//            String totalTime = (String) songTable.getValueAt(row, 2);
+//            String artist = (String) songTable.getValueAt(row, 1);
+//            lblArtist.setText(artist);
+//            lblTitle.setText(name);
+//            lblTotalTime.setText(totalTime);
+//            FileInputStream inputStream = new FileInputStream("src/resources/music/" + name + ".mp3");
+//            player = new MusicPlayer(inputStream);
+//            player.play();
+//            isPlaying = true;
+//            createIconPNG(playPauseButton, pause, PIC_W, PIC_H);
+//        } catch (FileNotFoundException e) {
+//            e.printStackTrace();
+//        }
+    }
+
+
+//    public Image loadAlbumCover(String album){
+//
+//    }
 
     private void showFileChooser() {
         fileChooser.setFileFilter(fileFilter);
@@ -689,5 +737,8 @@ public class MainSwing {
         }
     }
 
+    public CustomJSON getJSON(){
+        return this.json;
+    }
 
 }
