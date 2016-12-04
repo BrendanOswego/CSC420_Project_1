@@ -358,6 +358,13 @@ public class MainSwing {
     private ActionListener playPauseListener = new ActionListener() {
         @Override
         public void actionPerformed(ActionEvent e) {
+            if(!isPlaying() && !songTable.isRowSelected(songTable.getSelectedRow())){
+            createIconPNG(playPauseButton,pause,PIC_W,PIC_H);
+                playSong(0);
+                songTable.setRowSelectionInterval(0,0);
+                player.play();
+                return;
+            }
             if (!isPlaying()) {
                 isPlaying = true;
                 if (songTable.isRowSelected(songTable.getSelectedRow())) {
@@ -385,28 +392,32 @@ public class MainSwing {
                 int previous = (int)songIterator.previous();
                 System.out.println(previous);
 
-                if (player != null && player.getPlayerStatus() == 1) {
-                    player.stop();
-                    player = null;
-                }
-                try {
-                    String name = (String) table.getValueAt(table.getSelectedRow(), 0);
-                    String totalTime = (String) table.getValueAt(table.getSelectedRow(), 2);
-                    String artist = (String) table.getValueAt(table.getSelectedRow(), 1);
-                    lblArtist.setText(artist);
-                    lblTitle.setText(name);
-                    lblTotalTime.setText(totalTime);
-                    FileInputStream inputStream = new FileInputStream("src/resources/music/" + name + ".mp3");
-                    player = new MusicPlayer(inputStream);
-                    player.play();
-                    isPlaying = true;
-                    createIconPNG(playPauseButton, pause, PIC_W, PIC_H);
-                } catch (FileNotFoundException e) {
-                    e.printStackTrace();
-                }
+                playSong(table.getSelectedRow());
             }
         }
     };
+
+    public void playSong(int row){
+        if (player != null && player.getPlayerStatus() == 1) {
+            player.stop();
+            player = null;
+        }
+        try {
+            String name = (String) songTable.getValueAt(row,0);
+            String totalTime = (String) songTable.getValueAt(row, 2);
+            String artist = (String) songTable.getValueAt(row, 1);
+            lblArtist.setText(artist);
+            lblTitle.setText(name);
+            lblTotalTime.setText(totalTime);
+            FileInputStream inputStream = new FileInputStream("src/resources/music/" + name + ".mp3");
+            player = new MusicPlayer(inputStream);
+            player.play();
+            isPlaying = true;
+            createIconPNG(playPauseButton, pause, PIC_W, PIC_H);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+    }
 
 
     private void showFileChooser() {
