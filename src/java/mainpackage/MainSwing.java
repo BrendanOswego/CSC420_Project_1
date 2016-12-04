@@ -2,32 +2,21 @@ package mainpackage;
 
 
 import javazoom.jl.decoder.JavaLayerException;
-
 import net.miginfocom.swing.MigLayout;
-
 import org.apache.commons.io.FileUtils;
 
-import javax.sound.sampled.AudioSystem;
-import javax.sound.sampled.FloatControl;
-import javax.sound.sampled.Line;
-import javax.sound.sampled.LineUnavailableException;
-import javax.sound.sampled.Mixer;
 import javax.swing.*;
-import javax.swing.border.Border;
-import javax.swing.event.ChangeEvent;
-import javax.swing.event.ChangeListener;
 import javax.swing.filechooser.FileNameExtensionFilter;
-
 import java.awt.*;
 import java.awt.event.*;
 import java.io.*;
 import java.net.URL;
-import java.util.*;
-import java.util.List;
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.ListIterator;
 
 import static java.awt.Component.CENTER_ALIGNMENT;
 import static javax.swing.SwingConstants.*;
-import static javax.swing.border.BevelBorder.RAISED;
 
 //TODO- When all necessary methods are created, add Description comments for javadoc
 
@@ -250,8 +239,9 @@ public class MainSwing {
         //json.fillEmptyRows();
         createMiniPlayer();
     }
-    public void createMiniPlayer(){
-       //TODO: set hotkeys
+
+    public void createMiniPlayer() {
+        //TODO: set hotkeys
         miniPlayer = new JFrame();
         MiniMenuBar miniMenu = new MiniMenuBar();
         miniPlayer.setFocusable(true);
@@ -269,7 +259,7 @@ public class MainSwing {
         @Override
         public void actionPerformed(ActionEvent e) {
             songIterator = songList.listIterator();
-            
+
             if (!isShuffle()) {
                 if (player != null && player.getPlayerStatus() == 1) {
                     player.stop();
@@ -304,7 +294,7 @@ public class MainSwing {
             songList.add(songTable.getSelectedRow());
             songIterator = songList.listIterator();
             songIterator.next();
-            int previous = (int)songIterator.previous();
+            int previous = (int) songIterator.previous();
             System.out.println(previous);
             if (!isShuffle()) {
                 if (player != null && player.getPlayerStatus() == 1) {
@@ -358,10 +348,10 @@ public class MainSwing {
     private ActionListener playPauseListener = new ActionListener() {
         @Override
         public void actionPerformed(ActionEvent e) {
-            if(!isPlaying() && !songTable.isRowSelected(songTable.getSelectedRow())){
-            createIconPNG(playPauseButton,pause,PIC_W,PIC_H);
+            if (!isPlaying() && !songTable.isRowSelected(songTable.getSelectedRow())) {
+                createIconPNG(playPauseButton, pause, PIC_W, PIC_H);
                 playSong(0);
-                songTable.setRowSelectionInterval(0,0);
+                songTable.setRowSelectionInterval(0, 0);
                 player.play();
                 return;
             }
@@ -389,7 +379,7 @@ public class MainSwing {
                 songList.add(songTable.getSelectedRow());
                 songIterator = songList.listIterator();
                 songIterator.next();
-                int previous = (int)songIterator.previous();
+                int previous = (int) songIterator.previous();
                 System.out.println(previous);
 
                 playSong(table.getSelectedRow());
@@ -397,13 +387,13 @@ public class MainSwing {
         }
     };
 
-    public void playSong(int row){
+    public void playSong(int row) {
         if (player != null && player.getPlayerStatus() == 1) {
             player.stop();
             player = null;
         }
         try {
-            String name = (String) songTable.getValueAt(row,0);
+            String name = (String) songTable.getValueAt(row, 0);
             String totalTime = (String) songTable.getValueAt(row, 2);
             String artist = (String) songTable.getValueAt(row, 1);
             lblArtist.setText(artist);
@@ -426,7 +416,7 @@ public class MainSwing {
         fileChooser.setMultiSelectionEnabled(true);
         int returnVal = fileChooser.showOpenDialog(jFrame);
         if (returnVal == JFileChooser.APPROVE_OPTION) {
-            for (int i = 0;i< fileChooser.getSelectedFiles().length;i++) {
+            for (int i = 0; i < fileChooser.getSelectedFiles().length; i++) {
                 File f = new File(fileChooser.getSelectedFiles()[i].getPath());
                 try {
                     FileUtils.copyFileToDirectory(f, musicDir);
@@ -515,16 +505,16 @@ public class MainSwing {
         return playlistNames.size();
     }
 
-    private class MiniMenuBar extends JMenuBar{
+    private class MiniMenuBar extends JMenuBar {
         JMenuBar showMenuBar() {
             JMenuItem item;
             JMenuBar menuBar = new JMenuBar();
-           // menuBar.setPreferredSize(new Dimension((int) jFrame.getSize().getWidth()/4, 35));
+            // menuBar.setPreferredSize(new Dimension((int) jFrame.getSize().getWidth()/4, 35));
 
             JMenu viewMenu = new JMenu("View");
             menuBar.add(viewMenu);
             item = new JMenuItem("Default View");
-            item.addActionListener(new ActionListener(){
+            item.addActionListener(new ActionListener() {
                 @Override
                 public void actionPerformed(ActionEvent e) {
                     miniPlayer.setVisible(false);
@@ -539,6 +529,7 @@ public class MainSwing {
             return menuBar;
         }
     }
+
     /**
      * Inner class that creates the JMenuBar for the mainpackage JFrame
      */
@@ -572,7 +563,6 @@ public class MainSwing {
 
             item = new JMenuItem("Redo");
             menu.add(item);
-
 
 
             JMenu playlistMenu = new JMenu("Playlist");
@@ -672,7 +662,7 @@ public class MainSwing {
             JMenu viewMenu = new JMenu("View");
             menuBar.add(viewMenu);
             item = new JMenuItem("miniPlayer View");
-            item.addActionListener(new ActionListener(){
+            item.addActionListener(new ActionListener() {
 
                 @Override
                 public void actionPerformed(ActionEvent e) {
@@ -685,7 +675,7 @@ public class MainSwing {
             viewMenu.add(item);
 
             item = new JMenuItem("Default View");
-            item.addActionListener(new ActionListener(){
+            item.addActionListener(new ActionListener() {
 
                 @Override
                 public void actionPerformed(ActionEvent e) {
