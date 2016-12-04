@@ -26,9 +26,7 @@ import java.util.*;
 import java.util.List;
 
 import static java.awt.Component.CENTER_ALIGNMENT;
-import static javax.swing.SwingConstants.CENTER;
-import static javax.swing.SwingConstants.HORIZONTAL;
-import static javax.swing.SwingConstants.VERTICAL;
+import static javax.swing.SwingConstants.*;
 import static javax.swing.border.BevelBorder.RAISED;
 
 //TODO- When all necessary methods are created, add Description comments for javadoc
@@ -68,6 +66,9 @@ public class MainSwing {
     JLabel lblTotalTime = new JLabel();
     private JTable songTable = new JTable();
     private JFrame jFrame;
+    JPanel infoMidPanel;
+    JPanel infoMainPanel;
+    private JFrame miniPlayer;
     private JButton playPauseButton;
     private JButton helpButton;
     private JSlider volumeSlider;
@@ -125,14 +126,14 @@ public class MainSwing {
         jFrame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
         jFrame.setSize(screenSize.width / 2, screenSize.height);
-        JPanel infoMidPanel = new JPanel();
+        infoMidPanel = new JPanel();
         JPanel mainPanel = new JPanel();
         JPanel libraryPanel = new JPanel();
         JPanel centerPanel = new JPanel();
         JPanel soundControlPanel = new JPanel();
         JPanel musicPanel = new JPanel(new FlowLayout());
 
-        JPanel infoMainPanel = new JPanel(new MigLayout("ali 50% 50%, debug"));
+        infoMainPanel = new JPanel(new MigLayout("ali 50% 50%, debug"));
         JPanel infoLeftPanel = new JPanel();
         JPanel infoRightPabnel = new JPanel();
 
@@ -220,14 +221,13 @@ public class MainSwing {
         musicPanel.add(musicSlider);
         musicPanel.add(lblTotalTime);
         musicPanel.setAlignmentX(CENTER_ALIGNMENT);
-
         infoMidPanel.add(lblTitle);
         infoMidPanel.add(lblArtist);
         infoMidPanel.add(soundControlPanel);
         infoMidPanel.add(musicPanel);
+        //infoMidPanel.setBackground(Color.GREEN);
 
         //infoMidPanel.setBorder(BorderFactory.createBevelBorder(RAISED));
-
         infoMainPanel.add(infoMidPanel);
 
 
@@ -248,6 +248,20 @@ public class MainSwing {
         jFrame.setFocusable(true);
 
         //json.fillEmptyRows();
+        createMiniPlayer();
+    }
+    public void createMiniPlayer(){
+       //TODO: set hotkeys
+        miniPlayer = new JFrame();
+        MiniMenuBar miniMenu = new MiniMenuBar();
+        miniPlayer.setFocusable(true);
+        miniPlayer.setResizable(false);
+        miniPlayer.setJMenuBar(miniMenu.showMenuBar());
+        /*
+        We need to decide what functionality we want to have when the user closes out of the miniplayer.
+        Should it default back to the original player or close down altogether?
+         */
+
     }
 
 
@@ -490,7 +504,30 @@ public class MainSwing {
         return playlistNames.size();
     }
 
+    private class MiniMenuBar extends JMenuBar{
+        JMenuBar showMenuBar() {
+            JMenuItem item;
+            JMenuBar menuBar = new JMenuBar();
+           // menuBar.setPreferredSize(new Dimension((int) jFrame.getSize().getWidth()/4, 35));
 
+            JMenu viewMenu = new JMenu("View");
+            menuBar.add(viewMenu);
+            item = new JMenuItem("Default View");
+            item.addActionListener(new ActionListener(){
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    miniPlayer.setVisible(false);
+                    infoMainPanel.add(infoMidPanel);
+                    //miniPlayer.add(miniControls);
+                    //JPanel miniControls = controls;
+                    //miniPlayer.pack();
+                    jFrame.setVisible(true);
+                }
+            });
+            viewMenu.add(item);
+            return menuBar;
+        }
+    }
     /**
      * Inner class that creates the JMenuBar for the mainpackage JFrame
      */
@@ -526,9 +563,11 @@ public class MainSwing {
             menu.add(item);
 
 
+
             JMenu playlistMenu = new JMenu("Playlist");
 
             menuBar.add(playlistMenu);
+
 
             item = new JMenuItem("Create New Playlist");
             item.addActionListener(new ActionListener() {
@@ -588,6 +627,7 @@ public class MainSwing {
             });
 
             playlistMenu.add(item);
+
             playlistMenu.addSeparator();
             playlistMenu.add(playlistOpenSub);
             JMenuItem playlistOpenItem;
@@ -618,6 +658,32 @@ public class MainSwing {
                 }
                 playlistAddSub.add(item);
             }
+            JMenu viewMenu = new JMenu("View");
+            menuBar.add(viewMenu);
+            item = new JMenuItem("miniPlayer View");
+            item.addActionListener(new ActionListener(){
+
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    jFrame.setVisible(false);
+                    miniPlayer.add(infoMidPanel);
+                    miniPlayer.setVisible(true);
+                    miniPlayer.pack();
+                }
+            });
+            viewMenu.add(item);
+
+            item = new JMenuItem("Default View");
+            item.addActionListener(new ActionListener(){
+
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    miniPlayer.setVisible(false);
+                    jFrame.setVisible(true);
+                    // menuBar.remove(menu);
+                    // menuBar.remove(playlistMenu);
+                }
+            });
             return menuBar;
         }
     }
