@@ -1,5 +1,7 @@
 package mainpackage;
 
+import java.util.Objects;
+
 class Song {
 
     private String title;
@@ -18,7 +20,7 @@ class Song {
     }
 
     public Song getSong(String id){
-        if(id.equals(song.getId())){
+        if(Objects.equals(id, this.id)){
             return new Song(song.getId(),song.getTitle(),song.getArtist(),song.getAlbum(),song.getDuration());
         }
         return null;

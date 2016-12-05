@@ -16,9 +16,9 @@ import java.awt.*;
 import java.awt.event.*;
 import java.awt.image.BufferedImage;
 import java.io.*;
-import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.*;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Created by brendan<brendan.goldberg@cainkade.com> on 11/15/16.
@@ -27,7 +27,7 @@ public class CustomJSON {
 
     private static final File jsonFile = new File("src/resources/json/library.json");
 
-    private String[] colNames = {"Song", "Artist", "Duration"};
+    private String[] colNames = {"Song", "Artist", "Album", "Duration"};
 
 
     private boolean isPlaying = false;
@@ -41,11 +41,14 @@ public class CustomJSON {
     private JList<String> list;
     private JPanel libraryPanel;
     private JScrollPane playScroll;
+    private List<Integer> idList = new ArrayList<>();
 
     List<String> albumImages = new ArrayList<>();
+    private List<Song> listOfSongs;
     private int MAX_ID = 0;
 
     private MusicPlayer player;
+    DefaultTableModel tableModel;
 
     public CustomJSON(JTable songTable, JScrollPane scrollPane, JPanel libraryPanel, ArrayList<String> playlistNames) {
         this.libraryPanel = libraryPanel;
@@ -55,14 +58,13 @@ public class CustomJSON {
 
     }
 
-    public void setupTableMethods(TableModel dataModel) {
-        TableModel tableModel = dataModel;
+    public void setupTableMethods(DefaultTableModel dataModel) {
         songTable.setDragEnabled(true);
         songTable.setFocusable(true);
         songTable.setRowSelectionAllowed(true);
         songTable.setAutoCreateRowSorter(true);
         songTable.setFillsViewportHeight(true);
-        songTable.setModel(tableModel);
+        songTable.setModel(dataModel);
         songTable.setDefaultRenderer(Object.class, new CustomCellRender());
         songTable.setComponentPopupMenu(showPopupMenu());
         songTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
@@ -72,6 +74,7 @@ public class CustomJSON {
 
         ArrayList<String> jsonIdList = new ArrayList<>();
         songList = new HashMap<>();
+        listOfSongs = new ArrayList<>();
 
         TableModel dataModel = new TableModel(colNames, 0);
 
@@ -101,8 +104,8 @@ public class CustomJSON {
                                 Mp3File mp3 = new Mp3File("src/resources/music/" + title + ".mp3");
                                 if (mp3.hasId3v2Tag()) {
                                     byte[] imageData = mp3.getId3v2Tag().getAlbumImage();
-                                    if(imageData != null) {
-                                        System.out.println(mp3.getId3v2Tag().getAlbum());
+                                    if (imageData != null) {
+                                        //System.out.println(mp3.getId3v2Tag().getAlbum());
                                         BufferedImage img = ImageIO.read(new ByteArrayInputStream(imageData));
                                         File imageOutput = new File("src/resources/images/albums/" + mp3.getId3v2Tag().getAlbum() + ".png");
                                         String albumName = mp3.getId3v2Tag().getAlbum();
@@ -118,11 +121,18 @@ public class CustomJSON {
                                 e.printStackTrace();
                             }
                             tempSong = new Song(id, title, artist, album, duration);
+                            listOfSongs.add(tempSong);
                             songList.put(id, tempSong);
                             Playlist tempPlaylist = new Playlist(playlistName, songList);
                             playlists.add(tempPlaylist);
-                            Object[] rowObj = {tempSong.getTitle(), tempSong.getArtist(), tempSong.getDuration()};
-                            dataModel.addRow(rowObj);
+                            if (!Objects.equals(tempSong.getAlbum(), null)) {
+                                Object[] rowObj = {tempSong.getTitle(), tempSong.getArtist(), tempSong.getAlbum(), tempSong.getDuration()};
+                                dataModel.addRow(rowObj);
+                            } else {
+                                Object[] rowObj = {tempSong.getTitle(), tempSong.getArtist(), "", tempSong.getDuration()};
+                                tableModel.addRow(rowObj);
+                            }
+
                             scrollPane.getViewport().revalidate();
                             MAX_ID++;
                         }
@@ -141,7 +151,13 @@ public class CustomJSON {
     }
 
     public void addSong(String name) {
-        MAX_ID++;
+        Random r = new Random();
+
+        int id = r.nextInt(Integer.MAX_VALUE);
+        while (idList.contains(id)) {
+            id = r.nextInt();
+        }
+        idList.add(id);
         try {
             Mp3File mp3 = new Mp3File("src/resources/music/" + name);
             FileInputStream fileInputStream = new FileInputStream("src/resources/music/" + name);
@@ -160,20 +176,32 @@ public class CustomJSON {
                 JSONArray songArr = (JSONArray) playElement.get("song");
                 JSONObject newEntry = new JSONObject();
                 newEntry.put("title", fileName);
-                newEntry.put("id", Integer.toString(MAX_ID));
+                newEntry.put("id", Integer.toString(id));
                 newEntry.put("duration", player.getDuration(name));
-                if (mp3.hasId3v1Tag()) {
-                    newEntry.put("artist", mp3.getId3v1Tag().getArtist());
-                    songArr.add(newEntry);
-                }
                 if (mp3.hasId3v2Tag()) {
-                    newEntry.put("artist", mp3.getId3v2Tag().getArtist());
+                    if (mp3.getId3v2Tag().getArtist() != null) {
+                        newEntry.put("artist", mp3.getId3v2Tag().getArtist());
+                    } else {
+                        newEntry.put("artist", "");
+                    }
                     byte[] imageData = mp3.getId3v2Tag().getAlbumImage();
                     BufferedImage img = ImageIO.read(new ByteArrayInputStream(imageData));
                     File imageOutput = new File("src/resources/images/albums/" + mp3.getId3v2Tag().getAlbum() + ".png");
                     System.out.println(imageOutput.getName());
                     ImageIO.write(img, "jpg", imageOutput);
-                    newEntry.put("album", mp3.getId3v2Tag().getAlbum());
+                    if (mp3.getId3v2Tag().getAlbum() != null) {
+                        newEntry.put("album", mp3.getId3v2Tag().getAlbum());
+                    } else {
+                        newEntry.put("album", "");
+                    }
+
+                    songArr.add(newEntry);
+                } else if (mp3.hasId3v1Tag()) {
+                    if (!mp3.getId3v1Tag().getArtist().isEmpty()) {
+                        newEntry.put("artist", mp3.getId3v1Tag().getArtist());
+                    } else {
+                        newEntry.put("artist", "");
+                    }
                     songArr.add(newEntry);
                 } else {
                     System.err.println("File is not MP3 Format");
@@ -198,8 +226,6 @@ public class CustomJSON {
 
     public void loadPlaylistToTable(String name) {
 
-        TableModel dataModel = new TableModel(colNames, 0);
-
         JSONParser parser = new JSONParser();
 
         try {
@@ -220,7 +246,7 @@ public class CustomJSON {
                                 System.out.println(id);
                                 if (songList.containsKey(id)) {
                                     Object[] row = {songList.get(id).getTitle(), songList.get(id).getArtist(), songList.get(id).getDuration()};
-                                    dataModel.addRow(row);
+                                    tableModel.addRow(row);
                                     scrollPane.getViewport().revalidate();
                                 }
 
@@ -233,7 +259,7 @@ public class CustomJSON {
             e.printStackTrace();
         }
 
-        setupTableMethods(dataModel);
+        setupTableMethods(tableModel);
         // fillEmptyRows();
     }
 
@@ -414,13 +440,29 @@ public class CustomJSON {
     }
 
     public Image getAlbumImage(String albumName) {
-        File imageOutput = new File("src/resources/images/albums/" + albumName + ".png");
-        try {
-            Image image = ImageIO.read(imageOutput);
-            return image;
-        } catch (IOException e) {
-            e.printStackTrace();
+        if (!albumName.isEmpty()) {
+            System.out.println("Album Name: " + albumName + ".png");
+            File imageOutput = null;
+            if (albumName.equalsIgnoreCase("null")) {
+                imageOutput = new File("src/resources/images/albums/" + "null" + ".png");
+            } else {
+                imageOutput = new File("src/resources/images/albums/" + albumName + ".png");
+            }
+            try {
+                Image image = ImageIO.read(imageOutput);
+                return image;
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
         return null;
+    }
+
+    public List<Song> getListOfSongs() {
+        return listOfSongs;
+    }
+
+    public DefaultTableModel getTableModel() {
+        return this.tableModel;
     }
 }

@@ -4,52 +4,53 @@
       {
         "song": [
           {
-            "duration": "4:02",
-            "artist": null,
-            "album": null,
-            "id": "1",
-            "title": "Marshmello - Ritual (feat. Wrabel) [Official Music Video]"
+            "duration": "5:11",
+            "artist": "Blue Foundation",
+            "album": "Zeds Dead Remix",
+            "id": "2087907288",
+            "title": "Blue Foundation - Eyes On Fire (Zeds Dead Remix)"
           },
           {
-            "duration": "3:08",
-            "artist": null,
-            "id": "3",
-            "title": "Skrillex & Marshmello - ID",
-            "album:": null
-          },
-          {
-            "duration": "6:09",
-            "artist": "Eminem",
-            "album": "em.jpeg",
-            "id": "3",
-            "title": "Eminem - Rap God (Explicit)"
-          },
-          {
-            "duration": "5:01",
-            "artist": "Eminem",
-            "album": null,
-            "id": "7",
-            "title": "Eminem - Till I Collapse Lyrics"
-          },
-          {
-            "duration": "4:02",
-            "artist": null,
-            "album": null,
-            "id": "12",
-            "title": "Marshmello - Ritual (feat. Wrabel) [Official Music Video]"
+            "duration": "4:01",
+            "artist": "Another Brick in the Wall (Part 2)",
+            "album": "The Wall",
+            "id": "702152983",
+            "title": "Another Brick in the Wall (Part 2) - Pink Floyd"
           },
           {
             "duration": "5:38",
             "artist": "Deadmau5",
-            "id": "6",
+            "album": "",
+            "id": "1541299289",
             "title": "Deadmau5 - Moar Ghosts n Stuff (Hard Intro Mix 2011)"
+          },
+          {
+            "duration": "4:01",
+            "artist": "Another Brick in the Wall (Part 2)",
+            "album": "The Wall",
+            "id": "1125353623",
+            "title": "Another Brick in the Wall (Part 2) - Pink Floyd"
           },
           {
             "duration": "6:11",
             "artist": "deadmau5",
             "album": "Ghosts N Stuff - Single",
-            "id": "7",
+            "id": "628635404",
             "title": "01 Ghosts N Stuff"
+          },
+          {
+            "duration": "4:47",
+            "artist": "[HD] Pink Floyd",
+            "album": "Darkside of the Moon",
+            "id": "1660339261",
+            "title": "[HD] Pink Floyd - The Great Gig In The Sky"
+          },
+          {
+            "duration": "3:27",
+            "artist": "System Of A Down",
+            "album": "Toxcicity",
+            "id": "1162180507",
+            "title": "System Of A Down - Chop Suey!"
           }
         ],
         "name": "default"
