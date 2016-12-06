@@ -15,6 +15,7 @@ import javax.swing.event.RowSorterListener;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableRowSorter;
+import javax.swing.undo.UndoManager;
 import java.awt.*;
 import java.awt.event.*;
 import java.io.*;
@@ -75,6 +76,7 @@ public class MainSwing {
     private final JFileChooser fileChooser = new JFileChooser();
     private final FileNameExtensionFilter fileFilter = new FileNameExtensionFilter("MP3 Files", "mp3");
     private JLabel currentTime = new JLabel();
+    private UndoManager manager = new UndoManager();
 
 
     private ArrayList<String> playlistNames = new ArrayList<>();
@@ -294,10 +296,11 @@ public class MainSwing {
     public DocumentListener SearchListener = new DocumentListener() {
         @Override
         public void insertUpdate(DocumentEvent e) {
-            songTable.setRowSorter(rowSorter);
+
             String text = searchField.getText();
             System.out.println(text);
-            if (text.trim().length() > 0) {
+            if (text.trim().length() >= 0) {
+                songTable.setRowSorter(rowSorter);
                 rowSorter.setRowFilter(RowFilter.regexFilter("(?i)" + text));
                 System.out.println("Inside");
             } else {
@@ -307,10 +310,10 @@ public class MainSwing {
 
         @Override
         public void removeUpdate(DocumentEvent e) {
-            songTable.setRowSorter(rowSorter);
             String text = searchField.getText();
             System.out.println(text);
-            if (text.trim().length() > 0) {
+            if (text.trim().length() >= 0) {
+                songTable.setRowSorter(rowSorter);
                 rowSorter.setRowFilter(RowFilter.regexFilter("(?i)" + text));
             } else {
                 rowSorter.setRowFilter(null);
@@ -539,7 +542,7 @@ public class MainSwing {
         public void mousePressed(MouseEvent me) {
             JTable table = (JTable) me.getSource();
             if (me.getClickCount() == 2) {
-
+                System.out.println("JTable Row Count: "+ table.getRowCount());
                 int viewRow = table.convertRowIndexToView(table.getSelectedRow());
                 int modelRow = table.convertRowIndexToModel(viewRow);
                 String album = (String) table.getValueAt(modelRow, 2);
@@ -776,8 +779,14 @@ public class MainSwing {
             menu = new JMenu("Edit");
             menuBar.add(menu);
 
-            item = new JMenuItem("Undo");
-            menu.add(item);
+            JMenuItem undoItem = new JMenuItem("Undo");
+            undoItem.addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    manager.undo();
+                }
+            });
+            menu.add(undoItem);
 
             item = new JMenuItem("Redo");
             menu.add(item);
@@ -869,14 +878,6 @@ public class MainSwing {
                 playlistOpenSub.add(playlistOpenItem);
             }
 
-            playlistMenu.add(playlistAddSub);
-            for (int i = 0; i < json.getPlaylistNames().size(); i++) {
-                item = new JMenuItem(json.getPlaylistNames().get(i));
-                if (item.getText().equals("default")) {
-                    item.setText("Library");
-                }
-                playlistAddSub.add(item);
-            }
             JMenu viewMenu = new JMenu("View");
             menuBar.add(viewMenu);
             item = new JMenuItem("miniPlayer View");
@@ -913,6 +914,14 @@ public class MainSwing {
 
     public TableRowSorter<TableModel> getRowSorter() {
         return this.rowSorter;
+    }
+
+    public JTextField getSearchField() {
+        return searchField;
+    }
+
+    public JFrame getFrame(){
+        return this.jFrame;
     }
 
 }

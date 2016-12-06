@@ -3,6 +3,8 @@ package mainpackage;
 import com.mpatric.mp3agic.InvalidDataException;
 import com.mpatric.mp3agic.Mp3File;
 import com.mpatric.mp3agic.UnsupportedTagException;
+import net.miginfocom.swing.MigLayout;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
@@ -17,6 +19,8 @@ import java.awt.*;
 import java.awt.event.*;
 import java.awt.image.BufferedImage;
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.*;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -37,7 +41,7 @@ public class CustomJSON {
     private HashMap<String, Song> songList;
     private List<Playlist> playlists = new ArrayList<>();
     private JScrollPane scrollPane;
-    private ArrayList<String> playlistNames;
+    private ArrayList<String> playlistNames = new ArrayList<>();
     private DefaultListModel<String> libraryModel = new DefaultListModel<>();
     private JList<String> list;
     private JPanel libraryPanel;
@@ -51,10 +55,10 @@ public class CustomJSON {
     private int MAX_ID = 0;
 
     private MusicPlayer player;
-    TableModel tableModel;
+    TableModel tableModel = new TableModel(colNames,0);
     MainSwing mainSwing;
 
-    public CustomJSON(JTable songTable, JScrollPane scrollPane, JPanel libraryPanel, ArrayList<String> playlistNames, MainSwing mainSwing,TableRowSorter<TableModel> rowSorter) {
+    public CustomJSON(JTable songTable, JScrollPane scrollPane, JPanel libraryPanel, ArrayList<String> playlistNames, MainSwing mainSwing, TableRowSorter<TableModel> rowSorter) {
         this.libraryPanel = libraryPanel;
         this.songTable = songTable;
         this.scrollPane = scrollPane;
@@ -69,13 +73,11 @@ public class CustomJSON {
         songTable.setFocusable(true);
         songTable.setRowSelectionAllowed(true);
         songTable.setFillsViewportHeight(true);
-        songTable.setAutoCreateRowSorter(false);
-        songTable.setRowSorter(null);
+        songTable.setAutoCreateRowSorter(true);
         songTable.setDefaultRenderer(Object.class, new CustomCellRender());
         songTable.setComponentPopupMenu(showPopupMenu());
         songTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         songTable.setModel(tableModel);
-        songTable.setRowSorter(rowSorter);
 
     }
 
@@ -84,7 +86,9 @@ public class CustomJSON {
         ArrayList<String> jsonIdList = new ArrayList<>();
         songList = new HashMap<>();
         listOfSongs = new ArrayList<>();
-        tableModel = new TableModel(colNames, 0);
+
+        tableModel.getDataVector().removeAllElements();
+
 
         JSONParser parser = new JSONParser();
         Song tempSong;
@@ -97,10 +101,16 @@ public class CustomJSON {
             for (int i = 0; i < playlistArr.size(); i++) {
                 JSONObject playElement = (JSONObject) playlistArr.get(i);
                 String playlistName = (String) playElement.get("name");
+                if (!playlistNames.contains(playlistName)) {
+                    playlistNames.add(playlistName);
+
+                }
                 if (playlistName.equalsIgnoreCase("default")) {
                     JSONArray songArr = (JSONArray) playElement.get("song");
                     for (int j = 0; j < songArr.size(); j++) {
                         JSONObject songElement = (JSONObject) songArr.get(j);
+
+
                         if (songElement != null) {
                             String title = (String) songElement.get("title");
                             String id = (String) songElement.get("id");
@@ -171,6 +181,7 @@ public class CustomJSON {
             FileInputStream fileInputStream = new FileInputStream("src/resources/music/" + name);
             player = new MusicPlayer(fileInputStream);
 
+
             String fileName = FilenameUtils.removeExtension(name);
             JSONParser parser = new JSONParser();
             Object obj = parser.parse(new FileReader(jsonFile));
@@ -237,7 +248,12 @@ public class CustomJSON {
     public void loadPlaylistToTable(String name) {
 
         JSONParser parser = new JSONParser();
-        tableModel = new TableModel(colNames, 0);
+        while (tableModel.getRowCount() > 0){
+            tableModel.removeRow(0);
+        }
+        if (!mainSwing.getSearchField().getText().isEmpty()) {
+            mainSwing.getSearchField().setText("");
+        }
 
         try {
             Object obj = parser.parse(new FileReader(jsonFile));
@@ -270,11 +286,10 @@ public class CustomJSON {
             e.printStackTrace();
         }
         setupTableMethods();
-        // fillEmptyRows();
+
     }
 
     public void initializeAddedPlaylists() {
-        playlistNames = new ArrayList<>();
 
         JSONParser parser = new JSONParser();
         System.out.println("Initialized loading playlist names");
@@ -287,7 +302,10 @@ public class CustomJSON {
                 JSONObject playElement = (JSONObject) playlistArr.get(i);
                 String playName = (String) playElement.get("name");
                 if (playName != null) {
-                    playlistNames.add(playName);
+                    if (!playlistNames.contains(playName)) {
+                        playlistNames.add(playName);
+                    }
+
                 }
 
             }
@@ -300,8 +318,52 @@ public class CustomJSON {
 
     }
 
-    public void addSelectedSongToPlaylist(Song song, String playlistName) {
+    public void addSelectedSongToPlaylist(String userPlayName) {
         //TODO- Create TransferHandler, i.e DnD functionality
+        JSONParser parser = new JSONParser();
+        JSONObject newEntry = new JSONObject();
+        try {
+            Object obj = parser.parse(new FileReader(jsonFile));
+            JSONObject jsonObject = (JSONObject) obj;
+            JSONObject library = (JSONObject) jsonObject.get("library");
+            JSONArray playlistArr = (JSONArray) library.get("playlist");
+            for (int i = 0; i < playlistArr.size(); i++) {
+                JSONObject playElement = (JSONObject) playlistArr.get(i);
+                JSONArray songArr = (JSONArray) playElement.get("song");
+                String playName = (String) playElement.get("name");
+                for (int j = 0; j < songArr.size(); j++) {
+                    JSONObject songElement = (JSONObject) songArr.get(j);
+                    int viewRow = songTable.convertRowIndexToView(songTable.getSelectedRow());
+                    int modelRow = songTable.convertRowIndexToModel(viewRow);
+                    String title = (String) songTable.getValueAt(modelRow, 0);
+                    String artist = (String) songTable.getValueAt(modelRow, 1);
+                    String album = (String) songTable.getValueAt(modelRow, 2);
+                    String duration = (String) songTable.getValueAt(modelRow, 3);
+                    if (title.equalsIgnoreCase((String) songElement.get("title")) && artist.equalsIgnoreCase((String) songElement.get("artist"))) {
+                        String id = (String) songElement.get("id");
+                        newEntry.put("id", id);
+                    }
+                }
+
+                if (playName.equalsIgnoreCase(userPlayName)) {
+                    System.out.println(playlistArr.get(i));
+                    songArr.add(newEntry);
+                    System.out.println(songArr);
+                    FileWriter writer = new FileWriter(jsonFile);
+                    writer.write(jsonObject.toJSONString());
+                    writer.flush();
+                    writer.close();
+                    Thread.sleep(40);
+                }
+
+
+            }
+
+
+        } catch (ParseException | IOException | InterruptedException e) {
+            e.printStackTrace();
+        }
+        initializeJson();
     }
 
 
@@ -335,6 +397,8 @@ public class CustomJSON {
         } catch (IOException | InterruptedException | ParseException e) {
             e.printStackTrace();
         }
+
+        initializeJson();
 
     }
 
@@ -378,10 +442,12 @@ public class CustomJSON {
         } catch (IOException | ParseException e) {
             e.printStackTrace();
         }
+        setupTableMethods();
 
     }
 
     public JPopupMenu showPopupMenu() {
+
         JPopupMenu optionMenu = new JPopupMenu();
         JMenuItem itemPlay = new JMenuItem("Play");
         optionMenu.add(itemPlay);
@@ -390,21 +456,33 @@ public class CustomJSON {
             @Override
             public void actionPerformed(ActionEvent e) {
                 System.out.println(songTable.getSelectedRow() + " " + songTable.getSelectedColumn());
-
+                int viewRow = songTable.convertRowIndexToView(songTable.getSelectedRow());
+                int modelRow = songTable.convertRowIndexToModel(viewRow);
+                editSongInformation((String) songTable.getValueAt(modelRow, 0), (String) songTable.getValueAt(modelRow, 1));
                 //TODO Add a new Frame that shows all the information and once the user presses enter it edits the info for that row
             }
         });
         optionMenu.add(itemEdit);
-        JMenuItem itemAdd = new JMenuItem("Add To Playlist");
-        optionMenu.add(itemAdd);
-        JMenu subMenu = new JMenu();
-        for (int i = 0; i < 4; i++) {
-            JMenuItem item = new JMenuItem(String.valueOf(i));
-            subMenu.add(item);
+        JMenu itemAdd = new JMenu("Add To Playlist");
+
+        for (int i = 0; i < playlistNames.size(); i++) {
+            JMenuItem item = new JMenuItem(playlistNames.get(i));
+            item.addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    addSelectedSongToPlaylist(item.getText());
+                }
+            });
+            itemAdd.add(item);
         }
-        JMenuItem itemInfo = new JMenuItem("Get Info");
-        optionMenu.add(itemInfo);
+        optionMenu.add(itemAdd);
         JMenuItem itemDelete = new JMenuItem("Delete");
+        itemDelete.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                destroySelectedSong();
+            }
+        });
         optionMenu.add(itemDelete);
 
         return optionMenu;
@@ -418,6 +496,58 @@ public class CustomJSON {
             ((DefaultTableModel) songTable.getModel()).addRow(new Object[]{null, null, null});
             tableHeight += rowHeight;
         }
+    }
+
+    public void destroySelectedSong() {
+        JSONParser parser = new JSONParser();
+        try {
+            Object obj = parser.parse(new FileReader(jsonFile));
+            JSONObject jsonObject = (JSONObject) obj;
+            JSONObject library = (JSONObject) jsonObject.get("library");
+            JSONArray playlistArr = (JSONArray) library.get("playlist");
+            for (int i = 0; i < playlistArr.size(); i++) {
+                JSONObject playElement = (JSONObject) playlistArr.get(i);
+                System.out.println("Play Element: " + playElement);
+                JSONArray songArr = (JSONArray) playElement.get("song");
+                for (int j = 0; j < songArr.size(); j++) {
+                    JSONObject songElement = (JSONObject) songArr.get(j);
+                    System.out.println("Song Element: " + songElement.toString());
+                    int viewRow = songTable.convertRowIndexToView(songTable.getSelectedRow());
+                    int modelRow = songTable.convertRowIndexToModel(viewRow);
+                    String title = (String) songTable.getValueAt(modelRow, 0);
+                    String artist = (String) songTable.getValueAt(modelRow, 1);
+                    String album = (String) songTable.getValueAt(modelRow, 2);
+                    String duration = (String) songTable.getValueAt(modelRow, 3);
+                    if (title.equalsIgnoreCase((String) songElement.get("title")) &&
+                            artist.equalsIgnoreCase((String) songElement.get("artist"))) {
+
+                        File f = new File("src/resources/music/" + title + ".mp3");
+                        boolean removedMP3 = f.delete();
+                        if (!removedMP3) {
+                            throw new IllegalArgumentException("Delete: deletion failed");
+                        }
+                        songArr.remove(songElement);
+
+                        FileWriter writer = null;
+                        try {
+                            writer = new FileWriter(jsonFile);
+                            writer.write(jsonObject.toJSONString());
+                            writer.flush();
+                            writer.close();
+                            Thread.sleep(40);
+                        } catch (IOException | InterruptedException e) {
+                            e.printStackTrace();
+                        }
+
+
+                    }
+
+                }
+            }
+        } catch (ParseException | IOException e) {
+            e.printStackTrace();
+        }
+        initializeJson();
     }
 
     public MouseListener mouseListener = new MouseAdapter() {
@@ -438,6 +568,145 @@ public class CustomJSON {
             }
         }
     };
+
+    public void editSongInformation(String currentTitle, String currentArtist) {
+        JDialog dialog = new JDialog();
+        dialog.setLayout(new MigLayout("ali 50% 50%"));
+        int width = 300;
+        int height = 200;
+        int xPos = ((int) mainSwing.getFrame().getSize().getWidth() - width) / 2;
+        int yPos = ((int) mainSwing.getFrame().getSize().getHeight() - height) / 2;
+        dialog.setBounds(xPos, yPos, width, height);
+
+        JLabel lblTitle = new JLabel("Title:");
+        JLabel lblArtist = new JLabel("Artist:");
+        JLabel lblAlbum = new JLabel("Album");
+        JTextField tfTitle = new JTextField(15);
+        JTextField tfArtist = new JTextField(15);
+        JTextField tfAlbum = new JTextField(15);
+        JButton submit = new JButton("Submit");
+        JButton cancel = new JButton("Cancel");
+
+        submit.setPreferredSize(new Dimension(80, 30));
+        cancel.setPreferredSize(new Dimension(80, 30));
+        dialog.add(lblTitle);
+        dialog.add(tfTitle, "wrap");
+        dialog.add(lblArtist);
+        dialog.add(tfArtist, "wrap");
+        dialog.add(lblAlbum);
+        dialog.add(tfAlbum, "wrap");
+        dialog.add(cancel);
+        dialog.add(submit);
+        dialog.pack();
+        dialog.setVisible(true);
+        dialog.setLocationRelativeTo(mainSwing.getFrame());
+        JSONParser parser = new JSONParser();
+
+        int viewRow = songTable.convertRowIndexToView(songTable.getSelectedRow());
+        int modelRow = songTable.convertRowIndexToModel(viewRow);
+        try {
+            Object obj = parser.parse(new FileReader(jsonFile));
+            JSONObject jsonObject = (JSONObject) obj;
+            JSONObject library = (JSONObject) jsonObject.get("library");
+            JSONArray playlistArr = (JSONArray) library.get("playlist");
+            for (int i = 0; i < playlistArr.size(); i++) {
+                JSONObject playElement = (JSONObject) playlistArr.get(i);
+                System.out.println("Play Element: " + playElement);
+                JSONArray songArr = (JSONArray) playElement.get("song");
+                for (int j = 0; j < songArr.size(); j++) {
+                    JSONObject songElement = (JSONObject) songArr.get(j);
+                    System.out.println("Song Element: " + songElement.toString());
+                    String title = (String) songTable.getValueAt(modelRow, 0);
+                    String artist = (String) songTable.getValueAt(modelRow, 1);
+                    String album = (String) songTable.getValueAt(modelRow, 2);
+                    String duration = (String) songTable.getValueAt(modelRow, 3);
+
+                    tfTitle.setText(title);
+                    tfArtist.setText(artist);
+                    tfAlbum.setText(album);
+
+                }
+            }
+        } catch (ParseException | IOException e) {
+            e.printStackTrace();
+        }
+
+        submit.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                try {
+                    Object obj = parser.parse(new FileReader(jsonFile));
+                    JSONObject jsonObject = (JSONObject) obj;
+                    JSONObject library = (JSONObject) jsonObject.get("library");
+                    JSONArray playlistArr = (JSONArray) library.get("playlist");
+                    for (int i = 0; i < playlistArr.size(); i++) {
+                        JSONObject playElement = (JSONObject) playlistArr.get(i);
+                        System.out.println("Play Element: " + playElement);
+                        JSONArray songArr = (JSONArray) playElement.get("song");
+                        for (int j = 0; j < songArr.size(); j++) {
+                            JSONObject songElement = (JSONObject) songArr.get(j);
+                            System.out.println("Song Element: " + songElement.toString());
+                            String title = (String) songElement.get("title");
+                            String artist = (String) songElement.get("artist");
+                            String album = (String) songElement.get("album");
+                            String duration = (String) songTable.getValueAt(modelRow, 3);
+
+
+                            if (title.equalsIgnoreCase(currentTitle) && artist.equalsIgnoreCase(currentArtist)) {
+                                String newTitle = tfTitle.getText();
+                                String newArtist = tfArtist.getText();
+                                String newAlbum = tfAlbum.getText();
+                                songElement.put("title", newTitle);
+                                songElement.put("artist", newArtist);
+                                songElement.put("album", newAlbum);
+                                File currentMP3 = new File("src/resources/music/" + title + ".mp3");
+                                File newMP3 = new File("src/resources/music/" + newTitle + ".mp3");
+                                boolean renamedFile = currentMP3.renameTo(newMP3);
+                                if (!renamedFile) {
+                                    System.err.println("Error renaming music file");
+                                }
+                                FileWriter writer = null;
+                                try {
+                                    writer = new FileWriter(jsonFile);
+                                    writer.write(jsonObject.toJSONString());
+                                    writer.flush();
+                                    writer.close();
+                                    Thread.sleep(40);
+                                } catch (IOException | InterruptedException exc) {
+                                    exc.printStackTrace();
+                                }
+
+                            }
+                            if (!album.equalsIgnoreCase(tfAlbum.getText())) {
+                                songElement.put("album", album);
+                                File currentAlbum = new File("src/resources/images/albums/" + album + ".png");
+                                File newAlbum = new File("src/resources/images/albums/" + tfAlbum.getText() + ".png");
+                                if (!newAlbum.exists()) {
+                                    FileUtils.copyFile(currentAlbum, newAlbum);
+                                }
+                            }
+
+                            initializeJson();
+                            dialog.setVisible(false);
+
+                        }
+                    }
+                } catch (ParseException | IOException ex) {
+                    ex.printStackTrace();
+                }
+            }
+        });
+        cancel.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                dialog.setVisible(false);
+            }
+        });
+
+        initializeJson();
+
+
+    }
 
 
     public ArrayList<String> getPlaylistNames() {
