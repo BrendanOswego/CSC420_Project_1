@@ -55,7 +55,7 @@ public class CustomJSON {
     private int MAX_ID = 0;
 
     private MusicPlayer player;
-    TableModel tableModel = new TableModel(colNames,0);
+    TableModel tableModel = new TableModel(colNames, 0);
     MainSwing mainSwing;
 
     public CustomJSON(JTable songTable, JScrollPane scrollPane, JPanel libraryPanel, ArrayList<String> playlistNames, MainSwing mainSwing, TableRowSorter<TableModel> rowSorter) {
@@ -89,7 +89,7 @@ public class CustomJSON {
 
         tableModel.getDataVector().removeAllElements();
 
-
+        String playlistName = null;
         JSONParser parser = new JSONParser();
         Song tempSong;
         try {
@@ -100,11 +100,7 @@ public class CustomJSON {
 
             for (int i = 0; i < playlistArr.size(); i++) {
                 JSONObject playElement = (JSONObject) playlistArr.get(i);
-                String playlistName = (String) playElement.get("name");
-                if (!playlistNames.contains(playlistName)) {
-                    playlistNames.add(playlistName);
-
-                }
+                playlistName = (String) playElement.get("name");
                 if (playlistName.equalsIgnoreCase("default")) {
                     JSONArray songArr = (JSONArray) playElement.get("song");
                     for (int j = 0; j < songArr.size(); j++) {
@@ -157,6 +153,11 @@ public class CustomJSON {
 
                     }
                 }
+
+            }
+
+            if (!playlistNames.contains(playlistName)) {
+                playlistNames.add(playlistName);
 
             }
 
@@ -248,7 +249,7 @@ public class CustomJSON {
     public void loadPlaylistToTable(String name) {
 
         JSONParser parser = new JSONParser();
-        while (tableModel.getRowCount() > 0){
+        while (tableModel.getRowCount() > 0) {
             tableModel.removeRow(0);
         }
         if (!mainSwing.getSearchField().getText().isEmpty()) {
@@ -293,6 +294,7 @@ public class CustomJSON {
 
         JSONParser parser = new JSONParser();
         System.out.println("Initialized loading playlist names");
+        String playName = null;
         try {
             Object obj = parser.parse(new FileReader(jsonFile));
             JSONObject jsonObject = (JSONObject) obj;
@@ -300,14 +302,12 @@ public class CustomJSON {
             JSONArray playlistArr = (JSONArray) library.get("playlist");
             for (int i = 0; i < playlistArr.size(); i++) {
                 JSONObject playElement = (JSONObject) playlistArr.get(i);
-                String playName = (String) playElement.get("name");
-                if (playName != null) {
-                    if (!playlistNames.contains(playName)) {
-                        playlistNames.add(playName);
-                    }
+                playName = (String) playElement.get("name");
 
-                }
 
+            }
+            if (!playlistNames.contains(playName)) {
+                playlistNames.add(playName);
             }
             System.out.println("Playlists added: " + playlistNames.toString());
 
@@ -397,8 +397,7 @@ public class CustomJSON {
         } catch (IOException | InterruptedException | ParseException e) {
             e.printStackTrace();
         }
-
-        initializeJson();
+        setupTableMethods();
 
     }
 
@@ -408,6 +407,7 @@ public class CustomJSON {
         System.out.println("Initialized loading playlist names");
         if (list == null) {
             list = new JList<>(libraryModel);
+            list.setCellRenderer(new JListCellRenderer());
             playScroll = new JScrollPane(list);
             list.setFont(list.getFont().deriveFont(15f));
             list.setSelectionMode(ListSelectionModel.SINGLE_INTERVAL_SELECTION);
