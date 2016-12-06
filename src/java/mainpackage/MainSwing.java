@@ -64,18 +64,22 @@ public class MainSwing {
     private JFrame jFrame;
     JPanel infoMidPanel;
     JPanel infoMainPanel;
+    JPanel infoLeftPanel;
+    JPanel mainPanel;
     private JFrame miniPlayer;
     private JButton playPauseButton;
     private JButton helpButton;
     private JButton shuffleButton;
     private JSlider volumeSlider;
     private AlbumPanel albumPanel;
+    private JButton switcher;
+    private ArtistView  AV;
     private JTextField searchField = new JTextField(8);
     private TableRowSorter<TableModel> rowSorter = null;
     private final JFileChooser fileChooser = new JFileChooser();
     private final FileNameExtensionFilter fileFilter = new FileNameExtensionFilter("MP3 Files", "mp3");
     private JLabel currentTime = new JLabel();
-
+    public PlayerState currentState = PlayerState.BRENDON;
 
     private ArrayList<String> playlistNames = new ArrayList<>();
 
@@ -105,6 +109,9 @@ public class MainSwing {
 
 
     }
+    public enum PlayerState{AKEEM,BRENDON
+    }
+
 
 
     public static void main(String[] args) {
@@ -128,14 +135,14 @@ public class MainSwing {
         Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
         jFrame.setSize(screenSize.width / 2, screenSize.height);
         infoMidPanel = new JPanel(new MigLayout("center center, wrap, gapy 0", "[grow,fill]"));
-        JPanel mainPanel = new JPanel();
+        mainPanel = new JPanel();
         JPanel libraryPanel = new JPanel();
         JPanel centerPanel = new JPanel();
         JPanel soundControlPanel = new JPanel(new MigLayout("ali 50% 50%", "", "[grow,fill]"));
         JPanel musicPanel = new JPanel(new FlowLayout());
 
         infoMainPanel = new JPanel(new MigLayout("ali 50% 50%", "[][][]", ""));
-        JPanel infoLeftPanel = new JPanel(new MigLayout("ali 50% 50%"));
+        infoLeftPanel = new JPanel(new MigLayout("ali 50% 50%"));
 
 
         libraryPanel.setPreferredSize(new Dimension(120, jFrame.getHeight()));
@@ -208,8 +215,9 @@ public class MainSwing {
 
         //This has to be called before the songTable is added to the center panel
         //And anything that changes the songTable information as well i.e changing the name of a song
-
+        AV = new ArtistView();
         json = new CustomJSON(songTable, scrollPane, libraryPanel, playlistNames, this, rowSorter);
+        json.setAV(AV);
         json.initializeJson();
         json.initializeAddedPlaylists();
 
@@ -237,9 +245,11 @@ public class MainSwing {
         musicPanel.add(musicSlider);
         musicPanel.add(lblTotalTime);
         musicPanel.setAlignmentX(CENTER_ALIGNMENT);
-
+        switcher = new JButton("Swap");
+        switcher.addActionListener(swapperListener);
         infoLeftPanel.add(searchLabel);
         infoLeftPanel.add(searchField);
+        infoLeftPanel.add(switcher);
 
         CC componentConstraints = new CC();
         componentConstraints.alignX("center").spanX();
@@ -251,9 +261,11 @@ public class MainSwing {
         //infoMidPanel.setBackground(Color.GREEN);
 
         //infoMidPanel.setBorder(BorderFactory.createBevelBorder(RAISED));
+
         infoMainPanel.add(infoMidPanel, "cell 1 0");
         infoMainPanel.add(albumPanel, "cell 2 0");
         infoMainPanel.add(infoLeftPanel, "cell 0 0");
+
 
 
         libraryPanel.add(libraryHeader);
@@ -290,7 +302,26 @@ public class MainSwing {
          */
 
     }
-
+    private ActionListener swapperListener = new ActionListener(){
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            if(currentState.equals(PlayerState.BRENDON)){
+                currentState = PlayerState.AKEEM;
+                infoMainPanel.remove(infoLeftPanel);
+            if(AV!=null) {
+            AV.setUpViewForArtist(jFrame, infoMainPanel, switcher);
+                }
+            }else{
+                currentState = PlayerState.BRENDON;
+                infoMainPanel.add(infoLeftPanel,"cell 0 0");
+                mainPanel.add(infoMainPanel,BorderLayout.NORTH);
+                jFrame.setContentPane(mainPanel);
+                Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+                jFrame.setSize(screenSize.width / 2, screenSize.height);
+                jFrame.revalidate();
+            }
+        }
+    };
     public DocumentListener SearchListener = new DocumentListener() {
         @Override
         public void insertUpdate(DocumentEvent e) {

@@ -43,7 +43,7 @@ public class CustomJSON {
     private JPanel libraryPanel;
     private JScrollPane playScroll;
     private List<Integer> idList = new ArrayList<>();
-
+    private ArtistView AV;
 
     List<String> albumImages = new ArrayList<>();
     TableRowSorter<TableModel> rowSorter;
@@ -63,7 +63,9 @@ public class CustomJSON {
         this.rowSorter = rowSorter;
 
     }
-
+    public void setAV(ArtistView meep){
+            AV = meep;
+    }
     public void setupTableMethods() {
         songTable.setDragEnabled(true);
         songTable.setFocusable(true);
@@ -155,6 +157,8 @@ public class CustomJSON {
         }
 
         setupTableMethods();
+        AV.updateListOfSongs(listOfSongs,this);
+
         //fillEmptyRows();
     }
 
