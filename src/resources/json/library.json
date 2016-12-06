@@ -4,59 +4,60 @@
       {
         "song": [
           {
-            "duration": "5:11",
-            "artist": "Blue Foundation",
-            "album": "Zeds Dead Remix",
-            "id": "2087907288",
-            "title": "Blue Foundation - Eyes On Fire (Zeds Dead Remix)"
+            "duration": "3:29",
+            "artist": "AUFL",
+            "album": "Rap Nation",
+            "id": "164022399",
+            "title": "AUFL - All In The Same (Prod. Cresce)"
           },
           {
-            "duration": "4:01",
-            "artist": "Another Brick in the Wall (Part 2)",
-            "album": "The Wall",
-            "id": "702152983",
-            "title": "Another Brick in the Wall (Part 2) - Pink Floyd"
-          },
-          {
-            "duration": "5:38",
-            "artist": "Deadmau5",
+            "duration": "3:30",
+            "artist": "Adventure Club",
             "album": "",
-            "id": "1541299289",
-            "title": "Deadmau5 - Moar Ghosts n Stuff (Hard Intro Mix 2011)"
+            "id": "1326199276",
+            "title": "Adventure Club - Dreams (feat. ELEA)"
           },
           {
-            "duration": "4:01",
-            "artist": "Another Brick in the Wall (Part 2)",
-            "album": "The Wall",
-            "id": "1125353623",
-            "title": "Another Brick in the Wall (Part 2) - Pink Floyd"
+            "duration": "2:44",
+            "artist": "Adventure Club ft. Elea",
+            "album": "Trap Nation",
+            "id": "653849843",
+            "title": "Adventure Club ft. Elea - Dreams (NIGHTOWLS & Fransis Derelle Remix)"
           },
           {
-            "duration": "6:11",
-            "artist": "deadmau5",
-            "album": "Ghosts N Stuff - Single",
-            "id": "628635404",
-            "title": "01 Ghosts N Stuff"
+            "duration": "2:58",
+            "artist": "John Calhoun",
+            "album": "Rap Nation",
+            "id": "1622323726",
+            "title": "John Calhoun - The Good Guys (Official Music Video)"
           },
           {
-            "duration": "4:47",
-            "artist": "[HD] Pink Floyd",
-            "album": "Darkside of the Moon",
-            "id": "1660339261",
-            "title": "[HD] Pink Floyd - The Great Gig In The Sky"
+            "duration": "4:45",
+            "artist": "Kiiara",
+            "album": "",
+            "id": "1381206289",
+            "title": "Kiiara - Feels (AWAY Remix)"
           },
           {
-            "duration": "3:27",
-            "artist": "System Of A Down",
-            "album": "Toxcicity",
-            "id": "1162180507",
-            "title": "System Of A Down - Chop Suey!"
+            "duration": "3:13",
+            "artist": "Synchronice",
+            "album": "Trap Nation",
+            "id": "731231848",
+            "title": "Synchronice - Illusion"
           }
         ],
         "name": "default"
       },
       {
-        "song": [],
+        "song": [
+          {
+            "duration": "2:44",
+            "artist": "Adventure Club ft. Elea",
+            "album": "Trap Nation",
+            "id": "653849843",
+            "title": "Adventure Club ft. Elea - Dreams (NIGHTOWLS & Fransis Derelle Remix)"
+          }
+        ],
         "name": "test"
       }
     ]

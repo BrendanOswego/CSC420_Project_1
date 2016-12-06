@@ -12,6 +12,7 @@ import org.json.simple.parser.ParseException;
 import javax.imageio.ImageIO;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableRowSorter;
 import java.awt.*;
 import java.awt.event.*;
 import java.awt.image.BufferedImage;
@@ -43,31 +44,39 @@ public class CustomJSON {
     private JScrollPane playScroll;
     private List<Integer> idList = new ArrayList<>();
 
+
     List<String> albumImages = new ArrayList<>();
+    TableRowSorter<TableModel> rowSorter;
     private List<Song> listOfSongs;
     private int MAX_ID = 0;
 
     private MusicPlayer player;
-    DefaultTableModel tableModel;
+    TableModel tableModel;
+    MainSwing mainSwing;
 
-    public CustomJSON(JTable songTable, JScrollPane scrollPane, JPanel libraryPanel, ArrayList<String> playlistNames) {
+    public CustomJSON(JTable songTable, JScrollPane scrollPane, JPanel libraryPanel, ArrayList<String> playlistNames, MainSwing mainSwing,TableRowSorter<TableModel> rowSorter) {
         this.libraryPanel = libraryPanel;
         this.songTable = songTable;
         this.scrollPane = scrollPane;
         this.playlistNames = playlistNames;
+        this.mainSwing = mainSwing;
+        this.rowSorter = rowSorter;
 
     }
 
-    public void setupTableMethods(DefaultTableModel dataModel) {
+    public void setupTableMethods() {
         songTable.setDragEnabled(true);
         songTable.setFocusable(true);
         songTable.setRowSelectionAllowed(true);
-        songTable.setAutoCreateRowSorter(true);
         songTable.setFillsViewportHeight(true);
-        songTable.setModel(dataModel);
+        songTable.setAutoCreateRowSorter(false);
+        songTable.setRowSorter(null);
         songTable.setDefaultRenderer(Object.class, new CustomCellRender());
         songTable.setComponentPopupMenu(showPopupMenu());
         songTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        songTable.setModel(tableModel);
+        songTable.setRowSorter(rowSorter);
+
     }
 
     public void initializeJson() {
@@ -75,8 +84,7 @@ public class CustomJSON {
         ArrayList<String> jsonIdList = new ArrayList<>();
         songList = new HashMap<>();
         listOfSongs = new ArrayList<>();
-
-        TableModel dataModel = new TableModel(colNames, 0);
+        tableModel = new TableModel(colNames, 0);
 
         JSONParser parser = new JSONParser();
         Song tempSong;
@@ -127,7 +135,7 @@ public class CustomJSON {
                             playlists.add(tempPlaylist);
                             if (!Objects.equals(tempSong.getAlbum(), null)) {
                                 Object[] rowObj = {tempSong.getTitle(), tempSong.getArtist(), tempSong.getAlbum(), tempSong.getDuration()};
-                                dataModel.addRow(rowObj);
+                                tableModel.addRow(rowObj);
                             } else {
                                 Object[] rowObj = {tempSong.getTitle(), tempSong.getArtist(), "", tempSong.getDuration()};
                                 tableModel.addRow(rowObj);
@@ -146,7 +154,7 @@ public class CustomJSON {
             e.printStackTrace();
         }
 
-        setupTableMethods(dataModel);
+        setupTableMethods();
         //fillEmptyRows();
     }
 
@@ -185,10 +193,12 @@ public class CustomJSON {
                         newEntry.put("artist", "");
                     }
                     byte[] imageData = mp3.getId3v2Tag().getAlbumImage();
-                    BufferedImage img = ImageIO.read(new ByteArrayInputStream(imageData));
-                    File imageOutput = new File("src/resources/images/albums/" + mp3.getId3v2Tag().getAlbum() + ".png");
-                    System.out.println(imageOutput.getName());
-                    ImageIO.write(img, "jpg", imageOutput);
+                    if (imageData != null) {
+                        BufferedImage img = ImageIO.read(new ByteArrayInputStream(imageData));
+                        File imageOutput = new File("src/resources/images/albums/" + mp3.getId3v2Tag().getAlbum() + ".png");
+                        System.out.println(imageOutput.getName());
+                        ImageIO.write(img, "jpg", imageOutput);
+                    }
                     if (mp3.getId3v2Tag().getAlbum() != null) {
                         newEntry.put("album", mp3.getId3v2Tag().getAlbum());
                     } else {
@@ -227,6 +237,7 @@ public class CustomJSON {
     public void loadPlaylistToTable(String name) {
 
         JSONParser parser = new JSONParser();
+        tableModel = new TableModel(colNames, 0);
 
         try {
             Object obj = parser.parse(new FileReader(jsonFile));
@@ -245,7 +256,7 @@ public class CustomJSON {
                                 String id = (String) songElement.get("id");
                                 System.out.println(id);
                                 if (songList.containsKey(id)) {
-                                    Object[] row = {songList.get(id).getTitle(), songList.get(id).getArtist(), songList.get(id).getDuration()};
+                                    Object[] row = {songList.get(id).getTitle(), songList.get(id).getArtist(), songList.get(id).getAlbum(), songList.get(id).getDuration()};
                                     tableModel.addRow(row);
                                     scrollPane.getViewport().revalidate();
                                 }
@@ -258,8 +269,7 @@ public class CustomJSON {
         } catch (IOException | ParseException e) {
             e.printStackTrace();
         }
-
-        setupTableMethods(tableModel);
+        setupTableMethods();
         // fillEmptyRows();
     }
 
