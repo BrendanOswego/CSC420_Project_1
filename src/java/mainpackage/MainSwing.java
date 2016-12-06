@@ -67,9 +67,11 @@ public class MainSwing {
     JPanel infoMainPanel;
     private JFrame miniPlayer;
     private JButton playPauseButton;
+    JPanel mainPanel;
+    JPanel infoLeftPanel;
     private JButton helpButton;
     private JButton shuffleButton;
-    private JSlider volumeSlider;
+    JButton switchView;
     private AlbumPanel albumPanel;
     private JTextField searchField = new JTextField(8);
     private TableRowSorter<TableModel> rowSorter = null;
@@ -96,6 +98,13 @@ public class MainSwing {
     private String newDuration;
     private ArrayList<Integer> songQueue;
     private int currentIndex = -1;
+    private PlayerState currentState = PlayerState.BRENDAN;
+    private ArtistView AV;
+
+    public enum PlayerState {
+        AKEEM,
+        BRENDAN
+    }
 
     public MainSwing() {
         try {
@@ -130,14 +139,14 @@ public class MainSwing {
         Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
         jFrame.setSize(screenSize.width / 2, screenSize.height);
         infoMidPanel = new JPanel(new MigLayout("center center, wrap, gapy 0", "[grow,fill]"));
-        JPanel mainPanel = new JPanel();
+        mainPanel = new JPanel();
         JPanel libraryPanel = new JPanel();
         JPanel centerPanel = new JPanel();
         JPanel soundControlPanel = new JPanel(new MigLayout("ali 50% 50%", "", "[grow,fill]"));
         JPanel musicPanel = new JPanel(new FlowLayout());
 
         infoMainPanel = new JPanel(new MigLayout("ali 50% 50%", "[][][]", ""));
-        JPanel infoLeftPanel = new JPanel(new MigLayout("ali 50% 50%"));
+        infoLeftPanel = new JPanel(new MigLayout("ali 50% 50%"));
 
 
         libraryPanel.setPreferredSize(new Dimension(120, jFrame.getHeight()));
@@ -210,10 +219,12 @@ public class MainSwing {
 
         //This has to be called before the songTable is added to the center panel
         //And anything that changes the songTable information as well i.e changing the name of a song
-
+        AV = new ArtistView();
         json = new CustomJSON(songTable, scrollPane, libraryPanel, playlistNames, this, rowSorter);
+        json.setupAV(AV);
         json.initializeJson();
         json.initializeAddedPlaylists();
+
 
         TableModel dm = (TableModel) songTable.getModel();
         rowSorter = new TableRowSorter<>(dm);
@@ -223,7 +234,8 @@ public class MainSwing {
         albumPanel.setPreferredSize(new Dimension(150, 110));
         albumPanel.setBorder(BorderFactory.createLineBorder(Color.BLACK));
 
-
+        switchView = new JButton("Swap");
+        switchView.addActionListener(swapperListener);
         JLabel searchLabel = new JLabel("Search");
 
         searchField.getDocument().addDocumentListener(SearchListener);
@@ -242,6 +254,7 @@ public class MainSwing {
 
         infoLeftPanel.add(searchLabel);
         infoLeftPanel.add(searchField);
+        infoLeftPanel.add(switchView);
 
         CC componentConstraints = new CC();
         componentConstraints.alignX("center").spanX();
@@ -323,6 +336,26 @@ public class MainSwing {
         @Override
         public void changedUpdate(DocumentEvent e) {
             throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        }
+    };
+    private ActionListener swapperListener = new ActionListener() {
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            if (currentState.equals(PlayerState.BRENDAN)) {
+                currentState = PlayerState.AKEEM;
+                infoMainPanel.remove(infoLeftPanel);
+                if (AV != null) {
+                    AV.setUpViewForArtist(jFrame, infoMainPanel, switchView);
+                }
+            } else {
+                currentState = PlayerState.BRENDAN;
+                infoMainPanel.add(infoLeftPanel, "cell 0 0");
+                mainPanel.add(infoMainPanel, BorderLayout.NORTH);
+                jFrame.setContentPane(mainPanel);
+                Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+                jFrame.setSize(screenSize.width / 2, screenSize.height);
+                jFrame.revalidate();
+            }
         }
     };
 
@@ -542,7 +575,7 @@ public class MainSwing {
         public void mousePressed(MouseEvent me) {
             JTable table = (JTable) me.getSource();
             if (me.getClickCount() == 2) {
-                System.out.println("JTable Row Count: "+ table.getRowCount());
+                System.out.println("JTable Row Count: " + table.getRowCount());
                 int viewRow = table.convertRowIndexToView(table.getSelectedRow());
                 int modelRow = table.convertRowIndexToModel(viewRow);
                 String album = (String) table.getValueAt(modelRow, 2);
@@ -920,7 +953,7 @@ public class MainSwing {
         return searchField;
     }
 
-    public JFrame getFrame(){
+    public JFrame getFrame() {
         return this.jFrame;
     }
 

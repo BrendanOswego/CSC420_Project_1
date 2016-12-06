@@ -57,6 +57,7 @@ public class CustomJSON {
     private MusicPlayer player;
     TableModel tableModel = new TableModel(colNames, 0);
     MainSwing mainSwing;
+    private ArtistView AV;
 
     public CustomJSON(JTable songTable, JScrollPane scrollPane, JPanel libraryPanel, ArrayList<String> playlistNames, MainSwing mainSwing, TableRowSorter<TableModel> rowSorter) {
         this.libraryPanel = libraryPanel;
@@ -79,6 +80,10 @@ public class CustomJSON {
         songTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         songTable.setModel(tableModel);
 
+    }
+
+    public void setupAV(ArtistView AV) {
+        this.AV = AV;
     }
 
     public void initializeJson() {
@@ -166,6 +171,7 @@ public class CustomJSON {
         }
 
         setupTableMethods();
+        AV.updateListOfSongs(listOfSongs,this);
         //fillEmptyRows();
     }
 
