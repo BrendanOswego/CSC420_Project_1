@@ -103,7 +103,6 @@ public class MainSwing {
     private String newDuration;
     private ArrayList<Integer> songQueue;
     private int currentIndex = -1;
-    private ArtistView AV;
 
 
 
@@ -259,7 +258,7 @@ public class MainSwing {
         infoLeftPanel.add(searchLabel);
         infoLeftPanel.add(searchField,"wrap");
         infoLeftPanel.add(viewTitle);
-        infoLeftPanel.add(switcher);
+        infoLeftPanel.add(switchView);
 
         CC componentConstraints = new CC();
         componentConstraints.alignX("center").spanX();
@@ -319,13 +318,13 @@ public class MainSwing {
                 currentState = PlayerState.ARTIST;
                 infoMainPanel.remove(infoLeftPanel);
             if(AV!=null) {
-            AV.setUpViewForArtist(jFrame, infoMainPanel, switcher,viewTitle);
+            AV.setUpViewForArtist(jFrame, infoMainPanel, switchView,viewTitle);
                 }
             }else{
                 currentState = PlayerState.MAIN;
                 infoMainPanel.remove(viewTitle);
                 infoLeftPanel.add(viewTitle);
-                infoLeftPanel.add(switcher);
+                infoLeftPanel.add(switchView);
                 infoMainPanel.add(infoLeftPanel,"cell 0 0");
                 mainPanel.add(infoMainPanel,BorderLayout.NORTH);
                 jFrame.setContentPane(mainPanel);
