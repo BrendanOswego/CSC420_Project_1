@@ -92,8 +92,12 @@ public class MainSwing {
     JSlider musicSlider;
     private JButton helpButton;
     private JButton shuffleButton;
+    private JSlider volumeSlider;
+    JLabel viewTitle = new JLabel("View By: ");
     JButton switchView;
     private AlbumPanel albumPanel;
+    private JButton switcher;
+    private ArtistView AV;
     private JTextField searchField = new JTextField(8);
     private TableRowSorter<TableModel> rowSorter = null;
     private final JFileChooser fileChooser = new JFileChooser();
@@ -103,6 +107,7 @@ public class MainSwing {
 
     public Song currentSong;
 
+    public PlayerState currentState = PlayerState.MAIN;
 
     private ArrayList<String> playlistNames = new ArrayList<>();
 
@@ -123,24 +128,20 @@ public class MainSwing {
     private String newDuration;
     private ArrayList<Integer> songQueue;
     private int currentIndex = -1;
-    private PlayerState currentState = PlayerState.BRENDAN;
-    private ArtistView AV;
 
-    AdvancedPlayer advancedPlayer;
 
     CustomBasicPlayer basicPlayer;
 
     private boolean userChange = false;
 
-    public enum PlayerState {
-        AKEEM,
-        BRENDAN
-    }
-
-    private static MainSwing singleton = new MainSwing();
+    static MainSwing singleton = new MainSwing();
 
     public static MainSwing getInstance() {
         return singleton;
+    }
+
+    public enum PlayerState {
+        MAIN, ARTIST, ALBUM
     }
 
 
@@ -283,7 +284,8 @@ public class MainSwing {
         musicPanel.setAlignmentX(CENTER_ALIGNMENT);
 
         infoLeftPanel.add(searchLabel);
-        infoLeftPanel.add(searchField);
+        infoLeftPanel.add(searchField, "wrap");
+        infoLeftPanel.add(viewTitle);
         infoLeftPanel.add(switchView);
 
         CC componentConstraints = new CC();
@@ -296,6 +298,7 @@ public class MainSwing {
         //infoMidPanel.setBackground(Color.GREEN);
 
         //infoMidPanel.setBorder(BorderFactory.createBevelBorder(RAISED));
+
         infoMainPanel.add(infoMidPanel, "cell 1 0");
         infoMainPanel.add(albumPanel, "cell 2 0");
         infoMainPanel.add(infoLeftPanel, "cell 0 0");
@@ -326,6 +329,7 @@ public class MainSwing {
         miniPlayer = new JFrame();
         miniPlayer.setLayout(new MigLayout("ali 50% 50%"));
         miniPlayer.setMinimumSize(new Dimension(500, 200));
+
         MiniMenuBar miniMenu = new MiniMenuBar();
         miniPlayer.setFocusable(true);
         miniPlayer.setResizable(false);
@@ -338,6 +342,29 @@ public class MainSwing {
 
     }
 
+    private ActionListener swapperListener = new ActionListener() {
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            if (currentState.equals(PlayerState.MAIN)) {
+                currentState = PlayerState.ARTIST;
+                infoMainPanel.remove(infoLeftPanel);
+                if (AV != null) {
+                    AV.setUpViewForArtist(jFrame, infoMainPanel, switchView, viewTitle);
+                }
+            } else {
+                currentState = PlayerState.MAIN;
+                infoMainPanel.remove(viewTitle);
+                infoLeftPanel.add(viewTitle);
+                infoLeftPanel.add(switchView);
+                infoMainPanel.add(infoLeftPanel, "cell 0 0");
+                mainPanel.add(infoMainPanel, BorderLayout.NORTH);
+                jFrame.setContentPane(mainPanel);
+                Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+                jFrame.setSize(screenSize.width / 2, screenSize.height);
+                jFrame.revalidate();
+            }
+        }
+    };
     public DocumentListener SearchListener = new DocumentListener() {
         @Override
         public void insertUpdate(DocumentEvent e) {
@@ -368,33 +395,6 @@ public class MainSwing {
         @Override
         public void changedUpdate(DocumentEvent e) {
             throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-        }
-    };
-
-    public ChangeListener MusicSliderChangeListener = new ChangeListener() {
-        @Override
-        public void stateChanged(ChangeEvent e) {
-
-        }
-    };
-    private ActionListener swapperListener = new ActionListener() {
-        @Override
-        public void actionPerformed(ActionEvent e) {
-            if (currentState.equals(PlayerState.BRENDAN)) {
-                currentState = PlayerState.AKEEM;
-                infoMainPanel.remove(infoLeftPanel);
-                if (AV != null) {
-                    AV.setUpViewForArtist(jFrame, infoMainPanel, switchView);
-                }
-            } else {
-                currentState = PlayerState.BRENDAN;
-                infoMainPanel.add(infoLeftPanel, "cell 0 0");
-                mainPanel.add(infoMainPanel, BorderLayout.NORTH);
-                jFrame.setContentPane(mainPanel);
-                Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
-                jFrame.setSize(screenSize.width / 2, screenSize.height);
-                jFrame.revalidate();
-            }
         }
     };
 
@@ -840,6 +840,7 @@ public class MainSwing {
                 public void actionPerformed(ActionEvent e) {
                     miniPlayer.setVisible(false);
                     infoMainPanel.add(infoMidPanel);
+                    infoMainPanel.add(albumPanel);
                     //miniPlayer.add(miniControls);
                     //JPanel miniControls = controls;
                     //miniPlayer.pack();

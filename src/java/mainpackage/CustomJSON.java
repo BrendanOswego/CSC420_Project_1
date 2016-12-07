@@ -49,7 +49,6 @@ public class CustomJSON {
     private JScrollPane playScroll;
     private List<Integer> idList = new ArrayList<>();
 
-
     List<String> albumImages = new ArrayList<>();
     TableRowSorter<TableModel> rowSorter;
     private List<Song> listOfSongs;
@@ -68,7 +67,6 @@ public class CustomJSON {
         this.rowSorter = rowSorter;
 
     }
-
     public void setupTableMethods() {
         songTable.setDragEnabled(true);
         songTable.setFocusable(true);
