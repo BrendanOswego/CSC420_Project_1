@@ -18,6 +18,12 @@ class Song {
         this.album = album;
         this.duration = duration;
     }
+    Song(String title,String artist,String album,String duration){
+        this.title = title;
+        this.artist = artist;
+        this.album = album;
+        this.duration = duration;
+    }
 
     public Song getSong(String id){
         if(Objects.equals(id, this.id)){

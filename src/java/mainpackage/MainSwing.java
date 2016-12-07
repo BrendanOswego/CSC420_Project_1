@@ -1,17 +1,26 @@
 package mainpackage;
 
 
+import com.sun.javafx.tools.packager.Main;
 import javazoom.jl.decoder.JavaLayerException;
+import javazoom.jl.player.advanced.AdvancedPlayer;
+import javazoom.jl.player.advanced.PlaybackEvent;
+import javazoom.jl.player.advanced.PlaybackListener;
+import javazoom.jlgui.basicplayer.BasicPlayer;
+import javazoom.jlgui.basicplayer.BasicPlayerEvent;
+import javazoom.jlgui.basicplayer.BasicPlayerException;
 import net.miginfocom.layout.CC;
 import net.miginfocom.swing.MigLayout;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
+import sun.jvm.hotspot.runtime.Bytes;
 
+import javax.media.*;
+import javax.media.pim.PlugInManager;
+import javax.sound.sampled.*;
 import javax.swing.*;
 import javax.swing.border.BevelBorder;
-import javax.swing.event.DocumentEvent;
-import javax.swing.event.DocumentListener;
-import javax.swing.event.RowSorterEvent;
-import javax.swing.event.RowSorterListener;
+import javax.swing.event.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableRowSorter;
@@ -20,8 +29,17 @@ import java.awt.*;
 import java.awt.event.*;
 import java.io.*;
 import java.net.URL;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
+import java.util.List;
+import java.util.Timer;
 import java.util.regex.Pattern;
+
+import javax.media.Format;
+import javax.media.format.AudioFormat;
 
 import static java.awt.Component.CENTER_ALIGNMENT;
 import static javax.swing.SwingConstants.*;
@@ -58,6 +76,8 @@ public class MainSwing {
     private static final String help = "help_button";
     private static final String shuffleOff = "shuffle_off_button";
 
+    private static final int BUFFER_SIZE = 4096;
+
     JLabel lblTitle = new JLabel();
     JLabel lblArtist = new JLabel();
     JLabel lblTotalTime = new JLabel();
@@ -69,6 +89,7 @@ public class MainSwing {
     private JButton playPauseButton;
     JPanel mainPanel;
     JPanel infoLeftPanel;
+    JSlider musicSlider;
     private JButton helpButton;
     private JButton shuffleButton;
     JButton switchView;
@@ -79,6 +100,8 @@ public class MainSwing {
     private final FileNameExtensionFilter fileFilter = new FileNameExtensionFilter("MP3 Files", "mp3");
     private JLabel currentTime = new JLabel();
     private UndoManager manager = new UndoManager();
+
+    public Song currentSong;
 
 
     private ArrayList<String> playlistNames = new ArrayList<>();
@@ -92,6 +115,8 @@ public class MainSwing {
     private boolean isShuffle = false;
 
     private CustomJSON json;
+    private int pausedOnFrame;
+
 
     private String newTitle;
     private String newArtist;
@@ -101,20 +126,21 @@ public class MainSwing {
     private PlayerState currentState = PlayerState.BRENDAN;
     private ArtistView AV;
 
+    AdvancedPlayer advancedPlayer;
+
+    CustomBasicPlayer basicPlayer;
+
+    private boolean userChange = false;
+
     public enum PlayerState {
         AKEEM,
         BRENDAN
     }
 
-    public MainSwing() {
-        try {
-            createDesign();
-        } catch (JavaLayerException e) {
-            e.printStackTrace();
-        }
-        songTable.addMouseListener(songSelectListener);
+    private static MainSwing singleton = new MainSwing();
 
-
+    public static MainSwing getInstance() {
+        return singleton;
     }
 
 
@@ -123,7 +149,11 @@ public class MainSwing {
         EventQueue.invokeLater(new Runnable() {
             @Override
             public void run() {
-                new MainSwing();
+                try {
+                    getInstance().createDesign();
+                } catch (JavaLayerException e) {
+                    e.printStackTrace();
+                }
             }
         });
 
@@ -166,7 +196,7 @@ public class MainSwing {
 
         JLabel libraryHeader = new JLabel("Library");
         JLabel artistHeader = new JLabel("Artist");
-        JSlider musicSlider = new JSlider(JSlider.HORIZONTAL);
+        musicSlider = new JSlider(JSlider.HORIZONTAL);
         JButton previousButton = new JButton();
         playPauseButton = new JButton();
         JButton nextButton = new JButton();
@@ -194,8 +224,9 @@ public class MainSwing {
 
 
         musicSlider.setValue(0);
-        musicSlider.setPreferredSize(new Dimension(soundControlWidth + 30, (int) soundControlPanel.getPreferredSize().getHeight()));
+        musicSlider.setPreferredSize(new Dimension(soundControlWidth + 90, (int) soundControlPanel.getPreferredSize().getHeight()));
         musicSlider.setBorder(BorderFactory.createLineBorder(Color.black));
+
         //soundControlPanel.setBorder(BorderFactory.createLineBorder(Color.black));
 
         lblTitle.setFont(lblTitle.getFont().deriveFont(15f));
@@ -209,11 +240,10 @@ public class MainSwing {
         playPauseButton.setOpaque(true);
 
         CustomMenuBar topMenu = new CustomMenuBar();
-
         int songTableWidth = (int) centerPanel.getSize().getWidth() - (int) libraryPanel.getSize().getWidth();
         int songTableHeight = (int) centerPanel.getSize().getHeight() - (int) infoMidPanel.getSize().getHeight();
         songTable.setPreferredSize(new Dimension(songTableWidth, songTableHeight));
-
+        songTable.addMouseListener(songSelectListener);
         JScrollPane scrollPane = new JScrollPane(songTable);
         scrollPane.setPreferredSize(new Dimension((int) jFrame.getSize().getWidth(), (int) jFrame.getSize().getHeight()));
 
@@ -294,11 +324,13 @@ public class MainSwing {
     public void createMiniPlayer() {
         //TODO: set hotkeys
         miniPlayer = new JFrame();
+        miniPlayer.setLayout(new MigLayout("ali 50% 50%"));
+        miniPlayer.setMinimumSize(new Dimension(500, 200));
         MiniMenuBar miniMenu = new MiniMenuBar();
         miniPlayer.setFocusable(true);
         miniPlayer.setResizable(false);
         miniPlayer.setJMenuBar(miniMenu.showMenuBar());
-        miniPlayer.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
+
         /*
         We need to decide what functionality we want to have when the user closes out of the miniplayer.
         Should it default back to the original player or close down altogether?
@@ -338,6 +370,13 @@ public class MainSwing {
             throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
         }
     };
+
+    public ChangeListener MusicSliderChangeListener = new ChangeListener() {
+        @Override
+        public void stateChanged(ChangeEvent e) {
+
+        }
+    };
     private ActionListener swapperListener = new ActionListener() {
         @Override
         public void actionPerformed(ActionEvent e) {
@@ -363,57 +402,59 @@ public class MainSwing {
     private ActionListener previousListener = new ActionListener() {
         @Override
         public void actionPerformed(ActionEvent e) {
+
             if (!isShuffle()) { //if shuffle is off
-                if (player != null && player.getPlayerStatus() == 1) {
-                    player.stop();
-                    player = null;
-                }
-                try {
-                    if (songTable.getSelectedRow() > 0) {
-                        int viewRow = songTable.convertRowIndexToView(songTable.getSelectedRow());
-                        int modelRow = songTable.convertRowIndexToModel(viewRow);
-                        String name = (String) songTable.getValueAt(modelRow - 1, 0);
-                        String album = (String) songTable.getValueAt(modelRow - 1, 2);
-                        String totalTime = (String) songTable.getValueAt(modelRow - 1, 3);
-                        String artist = (String) songTable.getValueAt(modelRow - 1, 1);
-                        setAlbumImage(album);
-                        lblArtist.setText(artist);
-                        lblTitle.setText(name);
-                        lblTotalTime.setText(totalTime);
-                        FileInputStream inputStream = new FileInputStream("src/resources/music/" + name + ".mp3");
-                        player = new MusicPlayer(inputStream);
-                        songTable.setRowSelectionInterval(songTable.getSelectedRow() - 1, songTable.getSelectedRow() - 1);
-                        currentIndex = songTable.getRowCount() - 1;
+//                if (player != null && player.getPlayerStatus() == 1) {
+//                    player.stop();
+//                    player = null;
+//                }
 
-                    } else {
-                        System.out.println(songTable.getRowCount() - 1);
-                        String name = (String) songTable.getValueAt(songTable.getRowCount() - 1, 0);
-                        String album = (String) songTable.getValueAt(songTable.getRowCount() - 1, 2);
-                        String totalTime = (String) songTable.getValueAt(songTable.getRowCount() - 1, 3);
-                        String artist = (String) songTable.getValueAt(songTable.getRowCount() - 1, 1);
-                        setAlbumImage(album);
-                        lblArtist.setText(artist);
-                        lblTitle.setText(name);
-                        lblTotalTime.setText(totalTime);
-                        FileInputStream inputStream = new FileInputStream("src/resources/music/" + name + ".mp3");
-                        player = new MusicPlayer(inputStream);
-                        System.out.println(songTable.getRowCount() - 1);
-                        songTable.setRowSelectionInterval(songTable.getRowCount() - 1, songTable.getRowCount() - 1);
-                        currentIndex = songTable.getRowCount() - 1;
-
-                        player.play();
-                        currentIndex = songTable.getRowCount() - 1;
-                        isPlaying = true;
-                        createIconPNG(playPauseButton, pause, PIC_W, PIC_H);
-
+                if (songTable.getSelectedRow() > 0) {
+                    int viewRow = songTable.convertRowIndexToView(songTable.getSelectedRow());
+                    int modelRow = songTable.convertRowIndexToModel(viewRow);
+                    String name = (String) songTable.getValueAt(modelRow - 1, 0);
+                    String album = (String) songTable.getValueAt(modelRow - 1, 2);
+                    String totalTime = (String) songTable.getValueAt(modelRow - 1, 3);
+                    String artist = (String) songTable.getValueAt(modelRow - 1, 1);
+                    setAlbumImage(album);
+                    lblArtist.setText(artist);
+                    lblTitle.setText(name);
+                    lblTotalTime.setText(totalTime);
+                    if (basicPlayer != null) {
+                        basicPlayer.stop();
                     }
-                    player.play();
-                    isPlaying = true;
+                    playSong(modelRow - 1);
+                    songTable.setRowSelectionInterval(songTable.getSelectedRow() - 1, songTable.getSelectedRow() - 1);
+                    currentIndex = songTable.getRowCount() - 1;
 
+                } else {
+                    System.out.println(songTable.getRowCount() - 1);
+                    String name = (String) songTable.getValueAt(songTable.getRowCount() - 1, 0);
+                    String album = (String) songTable.getValueAt(songTable.getRowCount() - 1, 2);
+                    String totalTime = (String) songTable.getValueAt(songTable.getRowCount() - 1, 3);
+                    String artist = (String) songTable.getValueAt(songTable.getRowCount() - 1, 1);
+                    setAlbumImage(album);
+                    lblArtist.setText(artist);
+                    lblTitle.setText(name);
+                    lblTotalTime.setText(totalTime);
+                    if (basicPlayer != null) {
+                        basicPlayer.stop();
+                    }
+                    playSong(songTable.getRowCount() - 1);
+                    songTable.setRowSelectionInterval(songTable.getRowCount() - 1, songTable.getRowCount() - 1);
+                    currentIndex = songTable.getRowCount() - 1;
+
+                    //player.play();
+                    currentIndex = songTable.getRowCount() - 1;
+                    isPlaying = true;
                     createIconPNG(playPauseButton, pause, PIC_W, PIC_H);
-                } catch (FileNotFoundException ev) {
-                    ev.printStackTrace();
+
                 }
+                //player.
+                isPlaying = true;
+
+                createIconPNG(playPauseButton, pause, PIC_W, PIC_H);
+
             } else { //if shuffle is on
                 //if No previous item in songQueue do nothing
                 //else play previous
@@ -424,84 +465,89 @@ public class MainSwing {
     private ActionListener nextListener = new ActionListener() {
         @Override
         public void actionPerformed(ActionEvent e) {
+
+
             if (!isShuffle()) {  // If Not on shuffle mode
-                if (player != null && player.getPlayerStatus() == 1) {
-                    player.stop();
-                    player = null;
-                }
-                try {
-                    if (songTable.getSelectedRow() < songTable.getRowCount() - 1) { //If Not on shuffle mode && If no row is selected
-                        int viewRow = songTable.convertRowIndexToView(songTable.getSelectedRow());
-                        int modelRow = songTable.convertRowIndexToModel(viewRow);
-                        String name = (String) songTable.getValueAt(modelRow + 1, 0);
-                        String totalTime = (String) songTable.getValueAt(modelRow + 1, 3);
-                        String artist = (String) songTable.getValueAt(modelRow + 1, 1);
-                        String album = (String) songTable.getValueAt(modelRow + 1, 2);
-                        setAlbumImage(album);
-                        lblArtist.setText(artist);
-                        lblTitle.setText(name);
-                        lblTotalTime.setText(totalTime);
-                        FileInputStream inputStream = new FileInputStream("src/resources/music/" + name + ".mp3");
-                        player = new MusicPlayer(inputStream);
-                        songTable.setRowSelectionInterval(songTable.getSelectedRow() + 1, songTable.getSelectedRow() + 1);
-                        currentIndex = songTable.getRowCount() - 1;
-                        player.play();
-                        isPlaying = true;
-                        createIconPNG(playPauseButton, pause, PIC_W, PIC_H);
+//                if (player != null && player.getPlayerStatus() == 1) {
+//                    player.stop();
+//                    player = null;
+//                }
 
-                    } else { //If Not on shuffle mode && If a row is selected
-                        String name = (String) songTable.getValueAt(0, 0);
-                        String totalTime = (String) songTable.getValueAt(0, 3);
-                        String artist = (String) songTable.getValueAt(0, 1);
-                        String album = (String) songTable.getValueAt(0, 2);
-                        setAlbumImage(album);
-                        lblArtist.setText(artist);
-                        lblTitle.setText(name);
-                        lblTotalTime.setText(totalTime);
-                        FileInputStream inputStream = new FileInputStream("src/resources/music/" + name + ".mp3");
-                        player = new MusicPlayer(inputStream);
-                        songTable.setRowSelectionInterval(0, 0);
-                        player.play();
-                        isPlaying = true;
-                        createIconPNG(playPauseButton, pause, PIC_W, PIC_H);
-
+                if (songTable.getSelectedRow() < songTable.getRowCount() - 1) { //If Not on shuffle mode && If no row is selected
+                    int viewRow = songTable.convertRowIndexToView(songTable.getSelectedRow());
+                    int modelRow = songTable.convertRowIndexToModel(viewRow);
+                    String name = (String) songTable.getValueAt(modelRow + 1, 0);
+                    String totalTime = (String) songTable.getValueAt(modelRow + 1, 3);
+                    String artist = (String) songTable.getValueAt(modelRow + 1, 1);
+                    String album = (String) songTable.getValueAt(modelRow + 1, 2);
+                    setAlbumImage(album);
+                    lblArtist.setText(artist);
+                    lblTitle.setText(name);
+                    lblTotalTime.setText(totalTime);
+                    if (basicPlayer != null) {
+                        basicPlayer.stop();
                     }
-                } catch (FileNotFoundException ev) {
-                    ev.printStackTrace();
+                    playSong(modelRow + 1);
+                    System.out.println("Playing Song +1");
+
+                    songTable.setRowSelectionInterval(songTable.getSelectedRow() + 1, songTable.getSelectedRow() + 1);
+                    currentIndex = songTable.getRowCount() - 1;
+
+                    isPlaying = true;
+                    createIconPNG(playPauseButton, pause, PIC_W, PIC_H);
+
+                } else { //If Not on shuffle mode && If a row is selected
+                    String name = (String) songTable.getValueAt(0, 0);
+                    String totalTime = (String) songTable.getValueAt(0, 3);
+                    String artist = (String) songTable.getValueAt(0, 1);
+                    String album = (String) songTable.getValueAt(0, 2);
+                    setAlbumImage(album);
+                    lblArtist.setText(artist);
+                    lblTitle.setText(name);
+                    lblTotalTime.setText(totalTime);
+                    if (basicPlayer != null) {
+                        basicPlayer.stop();
+                    }
+                    playSong(0);
+                    System.out.println("Playing Song 0");
+                    songTable.setRowSelectionInterval(0, 0);
+
+                    isPlaying = true;
+                    createIconPNG(playPauseButton, pause, PIC_W, PIC_H);
+
                 }
+
             } else { // If on shuffle mode
-                if (player != null && player.getPlayerStatus() == 1) {
-                    player.stop();
-                    player = null;
-                }
-                if (songQueue.size() == 0) { // If on shuffle mode && If you just turned on shuffle mode
-                    try {
-                        Random r = new Random();
-                        int randomSpot = r.nextInt(songTable.getRowCount());
-                        System.out.println("Random Spot " + randomSpot);
-                        System.out.println("Row Count " + songTable.getRowCount());
-                        String name = (String) songTable.getValueAt(randomSpot, 0);
-                        String album = (String) songTable.getValueAt(randomSpot, 2);
-                        String totalTime = (String) songTable.getValueAt(randomSpot, 3);
-                        String artist = (String) songTable.getValueAt(randomSpot, 1);
-                        setAlbumImage(album);
-                        lblArtist.setText(artist);
-                        lblTitle.setText(name);
-                        lblTotalTime.setText(totalTime);
-                        FileInputStream inputStream = new FileInputStream("src/resources/music/" + name + ".mp3");
-                        player = new MusicPlayer(inputStream);
-                        songTable.setRowSelectionInterval(randomSpot, randomSpot);
 
-                        songQueue.add(randomSpot);
-                        currentIndex = songQueue.size();
-                        System.out.println("SongQueue length: " + songQueue.size());
-                        System.out.println("SongQueue last value: " + songQueue.get(songQueue.size() - 1));
-                        player.play();
-                        isPlaying = true;
-                        createIconPNG(playPauseButton, pause, PIC_W, PIC_H);
-                    } catch (FileNotFoundException ev) {
-                        ev.printStackTrace();
+                if (songQueue.size() == 0) { // If on shuffle mode && If you just turned on shuffle mode
+
+                    Random r = new Random();
+                    int randomSpot = r.nextInt(songTable.getRowCount());
+                    System.out.println("Random Spot " + randomSpot);
+                    System.out.println("Row Count " + songTable.getRowCount());
+                    String name = (String) songTable.getValueAt(randomSpot, 0);
+                    String album = (String) songTable.getValueAt(randomSpot, 2);
+                    String totalTime = (String) songTable.getValueAt(randomSpot, 3);
+                    String artist = (String) songTable.getValueAt(randomSpot, 1);
+                    setAlbumImage(album);
+                    lblArtist.setText(artist);
+                    lblTitle.setText(name);
+                    lblTotalTime.setText(totalTime);
+                    if (basicPlayer != null) {
+                        basicPlayer.stop();
                     }
+                    playSong(randomSpot);
+                    System.out.println("Playing Song Random Spot");
+                    songTable.setRowSelectionInterval(randomSpot, randomSpot);
+
+                    songQueue.add(randomSpot);
+                    currentIndex = songQueue.size();
+                    System.out.println("SongQueue length: " + songQueue.size());
+                    System.out.println("SongQueue last value: " + songQueue.get(songQueue.size() - 1));
+
+                    isPlaying = true;
+                    createIconPNG(playPauseButton, pause, PIC_W, PIC_H);
+
                 } else { //If shuffle mode was already one.
                     if (currentIndex == songQueue.size()) {//if there is nothing else in the queue
 
@@ -541,6 +587,7 @@ public class MainSwing {
     private ActionListener playPauseListener = new ActionListener() {
         @Override
         public void actionPerformed(ActionEvent e) {
+
             if (!isPlaying() && !songTable.isRowSelected(songTable.getSelectedRow())) {
                 songTable.setRowSelectionInterval(0, 0);
                 int viewRow = songTable.convertRowIndexToView(songTable.getSelectedRow());
@@ -549,35 +596,40 @@ public class MainSwing {
                 System.out.println(album);
                 setAlbumImage(album);
                 createIconPNG(playPauseButton, pause, PIC_W, PIC_H);
-                playSong(0);
                 songTable.setRowSelectionInterval(0, 0);
                 currentIndex = songTable.getRowCount() - 1;
-                player.play();
+                //FileInputStream
+                //player.play();
+                playSong(0);
                 return;
             }
             if (!isPlaying()) {
                 isPlaying = true;
                 if (songTable.isRowSelected(songTable.getSelectedRow())) {
                     createIconPNG(playPauseButton, pause, PIC_W, PIC_H);
-                    player.play();
+                    basicPlayer.resume();
                 }
             } else {
                 isPlaying = false;
                 if (songTable.isRowSelected(songTable.getSelectedRow())) {
                     createIconPNG(playPauseButton, play, PIC_W, PIC_H);
-                    player.pause();
+                    basicPlayer.pause();
                 }
             }
+
             //System.out.println(player.getPostion());
         }
     };
     private MouseListener songSelectListener = new MouseAdapter() {
         public void mousePressed(MouseEvent me) {
+
+
             JTable table = (JTable) me.getSource();
             if (me.getClickCount() == 2) {
                 System.out.println("JTable Row Count: " + table.getRowCount());
                 int viewRow = table.convertRowIndexToView(table.getSelectedRow());
                 int modelRow = table.convertRowIndexToModel(viewRow);
+                String title = (String) table.getValueAt(modelRow, 0);
                 String album = (String) table.getValueAt(modelRow, 2);
                 System.out.println(album);
                 setAlbumImage(album);
@@ -586,11 +638,15 @@ public class MainSwing {
                 songIterator.next();
                 int previous = songIterator.previous();
                 System.out.println(previous);
+                if (basicPlayer != null) {
+                    basicPlayer.stop();
+                }
+                playSong(modelRow);
 
-                playSong(table.getSelectedRow());
             }
         }
     };
+
 
     private void setAlbumImage(String albumName) {
         if (!Objects.equals(albumName, null)) {
@@ -605,34 +661,47 @@ public class MainSwing {
     }
 
     public void playSong(int row) {
-        if (player != null && player.getPlayerStatus() == 1) {
-            player.stop();
-            player = null;
+
+        String name = (String) songTable.getValueAt(row, 0);
+        String totalTime = (String) songTable.getValueAt(row, 3);
+        String artist = (String) songTable.getValueAt(row, 1);
+        String album = (String) songTable.getValueAt(row, 2);
+        currentSong = new Song(name, artist, album, totalTime);
+        lblArtist.setText(artist);
+        lblTitle.setText(name);
+        lblTotalTime.setText(totalTime);
+        setupTime();
+        isPlaying = true;
+        if (basicPlayer != null) {
+            basicPlayer.stop();
+            basicPlayer = null;
+        }
+        basicPlayer = new CustomBasicPlayer(getInstance());
+        basicPlayer.play(name);
+        if (basicPlayer != null && basicPlayer.getThread().getEvent().getValue() == BasicPlayerEvent.EOM) {
+            if (!isShuffle()) {
+                playSong(row + 1);
+            }
         }
 
-        try {
-            String name = (String) songTable.getValueAt(row, 0);
-            String totalTime = (String) songTable.getValueAt(row, 3);
-            String artist = (String) songTable.getValueAt(row, 1);
-            lblArtist.setText(artist);
-            lblTitle.setText(name);
-            lblTotalTime.setText(totalTime);
-            FileInputStream inputStream = new FileInputStream("src/resources/music/" + name + ".mp3");
-            player = new MusicPlayer(inputStream);
-            player.play();
-            isPlaying = true;
-            createIconPNG(playPauseButton, pause, PIC_W, PIC_H);
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        }
+        createIconPNG(playPauseButton, pause, PIC_W, PIC_H);
+
+    }
+
+
+    public void setupTime() {
+        String delim = ":";
+        String[] time = lblTotalTime.getText().split(delim);
+        int minutes = Integer.valueOf(time[0]);
+        int mTos = minutes * 60;
+        int seconds = Integer.valueOf(time[1]);
+        int totalTimeInSeconds = mTos + seconds;
+        System.out.println("Time in seconds: " + totalTimeInSeconds);
+
+        System.out.println("Minutes: " + minutes + "\nSeconds: " + seconds);
     }
 
     public void shufflePlay(int row) {
-        if (player != null && player.getPlayerStatus() == 1) {
-            player.stop();
-            player = null;
-        }
-
 
         Random r = new Random(songTable.getRowCount());
         LinkedList<Integer> shuffleList = new LinkedList<>();
@@ -663,6 +732,7 @@ public class MainSwing {
 //    public Image loadAlbumCover(String album){
 //
 //    }
+
 
     private void showFileChooser() {
         fileChooser.setFileFilter(fileFilter);
@@ -747,9 +817,6 @@ public class MainSwing {
         this.playlistNames = playlistNames;
     }
 
-    private boolean isPlaying() {
-        return this.isPlaying;
-    }
 
     private boolean isShuffle() {
         return this.isShuffle;
@@ -783,6 +850,7 @@ public class MainSwing {
             return menuBar;
         }
     }
+
 
     /**
      * Inner class that creates the JMenuBar for the mainpackage JFrame
@@ -920,6 +988,7 @@ public class MainSwing {
                 public void actionPerformed(ActionEvent e) {
                     jFrame.setVisible(false);
                     miniPlayer.add(infoMidPanel);
+                    miniPlayer.add(albumPanel);
                     miniPlayer.setVisible(true);
                     miniPlayer.pack();
                 }
@@ -937,6 +1006,9 @@ public class MainSwing {
                     // menuBar.remove(playlistMenu);
                 }
             });
+            item = new JMenuItem("Artist View");
+            item.addActionListener(swapperListener);
+            viewMenu.add(item);
             return menuBar;
         }
     }
@@ -955,6 +1027,19 @@ public class MainSwing {
 
     public JFrame getFrame() {
         return this.jFrame;
+    }
+
+    public JSlider getMusicSlider() {
+        return this.musicSlider;
+    }
+
+
+    public boolean isPlaying() {
+        return this.isPlaying;
+    }
+
+    public Song getCurrentSong() {
+        return this.currentSong;
     }
 
 }

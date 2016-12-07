@@ -3,6 +3,7 @@ package mainpackage;
 import com.mpatric.mp3agic.InvalidDataException;
 import com.mpatric.mp3agic.Mp3File;
 import com.mpatric.mp3agic.UnsupportedTagException;
+import javazoom.jl.decoder.JavaLayerException;
 import net.miginfocom.swing.MigLayout;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
@@ -52,7 +53,6 @@ public class CustomJSON {
     List<String> albumImages = new ArrayList<>();
     TableRowSorter<TableModel> rowSorter;
     private List<Song> listOfSongs;
-    private int MAX_ID = 0;
 
     private MusicPlayer player;
     TableModel tableModel = new TableModel(colNames, 0);
@@ -153,7 +153,7 @@ public class CustomJSON {
                             }
 
                             scrollPane.getViewport().revalidate();
-                            MAX_ID++;
+
                         }
 
                     }
@@ -171,7 +171,7 @@ public class CustomJSON {
         }
 
         setupTableMethods();
-        AV.updateListOfSongs(listOfSongs,this);
+        AV.updateListOfSongs(listOfSongs, this);
         //fillEmptyRows();
     }
 
@@ -750,4 +750,7 @@ public class CustomJSON {
     public DefaultTableModel getTableModel() {
         return this.tableModel;
     }
+
+
+
 }
