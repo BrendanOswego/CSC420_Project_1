@@ -18,7 +18,8 @@ public class AlbumPanel extends JPanel {
         this.mainSwing = mainSwing;
         this.json = this.mainSwing.getJSON();
 
-        setPreferredSize(new Dimension(100, 100));
+        setSize(new Dimension(160, 140));
+        setMinimumSize(new Dimension(180,140));
     }
 
     @Override
@@ -28,8 +29,8 @@ public class AlbumPanel extends JPanel {
             if (json != null) {
                 if (json.getAlbumImage(getAlbumString()) != null) {
                     g.drawImage(json.getAlbumImage(getAlbumString()), 0, 0,
-                            (int) getPreferredSize().getWidth(),
-                            (int) getPreferredSize().getHeight(), null);
+                            (int) getMinimumSize().getWidth(),
+                            (int) getMinimumSize().getHeight(), null);
                 }
             }
         }else {
