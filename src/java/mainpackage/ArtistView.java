@@ -26,11 +26,12 @@ public class ArtistView {
 
 
 
-     public void setUpViewForArtist(JFrame main,JPanel infoMidPanel,JButton switcher){
+     public void setUpViewForArtist(JFrame main,JPanel infoMidPanel,JButton switcher,JLabel viewTitle){
          mainFrame = main;
          Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
          mainFrame.setSize((screenSize.width / 2) + 500, screenSize.height-50);
          this.infoMidPanel = infoMidPanel;
+         infoMidPanel.add(viewTitle,"cell 0 0");
          infoMidPanel.add(switcher, "cell 0 0");
          mainPanel = new JPanel();
          mainPanel.setLayout(new MigLayout("fill"));

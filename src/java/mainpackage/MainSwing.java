@@ -71,6 +71,7 @@ public class MainSwing {
     private JButton helpButton;
     private JButton shuffleButton;
     private JSlider volumeSlider;
+    JLabel viewTitle = new JLabel("View By: ");
     private AlbumPanel albumPanel;
     private JButton switcher;
     private ArtistView  AV;
@@ -79,7 +80,7 @@ public class MainSwing {
     private final JFileChooser fileChooser = new JFileChooser();
     private final FileNameExtensionFilter fileFilter = new FileNameExtensionFilter("MP3 Files", "mp3");
     private JLabel currentTime = new JLabel();
-    public PlayerState currentState = PlayerState.BRENDON;
+    public PlayerState currentState = PlayerState.MAIN;
 
     private ArrayList<String> playlistNames = new ArrayList<>();
 
@@ -109,7 +110,7 @@ public class MainSwing {
 
 
     }
-    public enum PlayerState{AKEEM,BRENDON
+    public enum PlayerState{MAIN,ARTIST,ALBUM
     }
 
 
@@ -248,7 +249,8 @@ public class MainSwing {
         switcher = new JButton("Swap");
         switcher.addActionListener(swapperListener);
         infoLeftPanel.add(searchLabel);
-        infoLeftPanel.add(searchField);
+        infoLeftPanel.add(searchField,"wrap");
+        infoLeftPanel.add(viewTitle);
         infoLeftPanel.add(switcher);
 
         CC componentConstraints = new CC();
@@ -305,14 +307,17 @@ public class MainSwing {
     private ActionListener swapperListener = new ActionListener(){
         @Override
         public void actionPerformed(ActionEvent e) {
-            if(currentState.equals(PlayerState.BRENDON)){
-                currentState = PlayerState.AKEEM;
+            if(currentState.equals(PlayerState.MAIN)){
+                currentState = PlayerState.ARTIST;
                 infoMainPanel.remove(infoLeftPanel);
             if(AV!=null) {
-            AV.setUpViewForArtist(jFrame, infoMainPanel, switcher);
+            AV.setUpViewForArtist(jFrame, infoMainPanel, switcher,viewTitle);
                 }
             }else{
-                currentState = PlayerState.BRENDON;
+                currentState = PlayerState.MAIN;
+                infoMainPanel.remove(viewTitle);
+                infoLeftPanel.add(viewTitle);
+                infoLeftPanel.add(switcher);
                 infoMainPanel.add(infoLeftPanel,"cell 0 0");
                 mainPanel.add(infoMainPanel,BorderLayout.NORTH);
                 jFrame.setContentPane(mainPanel);
