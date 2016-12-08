@@ -892,21 +892,6 @@ public class MainSwing {
             });
             menu.add(item);
 
-            menu = new JMenu("Edit");
-            menuBar.add(menu);
-
-            JMenuItem undoItem = new JMenuItem("Undo");
-            undoItem.addActionListener(new ActionListener() {
-                @Override
-                public void actionPerformed(ActionEvent e) {
-                    manager.undo();
-                }
-            });
-            menu.add(undoItem);
-
-            item = new JMenuItem("Redo");
-            menu.add(item);
-
 
             JMenu playlistMenu = new JMenu("Playlist");
 
