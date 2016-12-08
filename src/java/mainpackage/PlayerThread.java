@@ -142,7 +142,7 @@ public class PlayerThread extends BasicPlayer implements BasicPlayerListener, Ru
         @Override
         protected Void doInBackground() throws Exception {
             while (currentBytes < totalBytes) {
-                System.out.println("Current Time in bytes: " + currentBytes);
+                //System.out.println("Current Time in bytes: " + currentBytes);
                 mainSwing.getMusicSlider().setValue(currentBytes);
                 Thread.sleep(1000);
             }

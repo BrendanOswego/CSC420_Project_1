@@ -6,7 +6,7 @@ import javazoom.jl.player.Player;
 import javazoom.jl.player.advanced.AdvancedPlayer;
 import javazoom.jl.player.advanced.PlaybackEvent;
 import javazoom.jl.player.advanced.PlaybackListener;
-import javazoom.spi.mpeg.sampled.file.MpegAudioFileReader;
+//import javazoom.spi.mpeg.sampled.file.MpegAudioFileReader;
 
 import javax.sound.sampled.AudioFileFormat;
 import javax.sound.sampled.UnsupportedAudioFileException;
@@ -40,21 +40,16 @@ public class MusicPlayer {
         }
     }
 
-    String getDuration(String name) {
-        try {
-            File f = new File("src/resources/music/" + name);
-            AudioFileFormat baseFileFormat = new MpegAudioFileReader().getAudioFileFormat(f);
-            Map properties = baseFileFormat.properties();
-            System.out.println(properties.toString());
-            Long microseconds = (Long) properties.get("duration");
-            int mili = (int) (microseconds / 1000);
-            int sec = (mili / 1000) % 60;
-            int min = (mili / 1000) / 60;
-            return String.format("%d:%02d", min, sec);
-        } catch (UnsupportedAudioFileException | IOException e) {
-            e.printStackTrace();
-        }
-        return null;
+    String getDuration(String name){
+        File f = new File("src/resources/music/" + name);
+        AudioFileFormat baseFileFormat= null;// = new MpegAudioFileReader().getAudioFileFormat(f);
+        Map properties = baseFileFormat.properties();
+        System.out.println(properties.toString());
+        Long microseconds = (Long) properties.get("duration");
+        int mili = (int) (microseconds / 1000);
+        int sec = (mili / 1000) % 60;
+        int min = (mili / 1000) / 60;
+        return String.format("%d:%02d", min, sec);
     }
 
 

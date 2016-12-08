@@ -1,7 +1,6 @@
 package mainpackage;
 
 
-import com.sun.javafx.tools.packager.Main;
 import javazoom.jl.decoder.JavaLayerException;
 import javazoom.jl.player.advanced.AdvancedPlayer;
 import javazoom.jl.player.advanced.PlaybackEvent;
@@ -13,7 +12,6 @@ import net.miginfocom.layout.CC;
 import net.miginfocom.swing.MigLayout;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
-import sun.jvm.hotspot.runtime.Bytes;
 
 import javax.media.*;
 import javax.media.pim.PlugInManager;
@@ -119,6 +117,7 @@ public class MainSwing {
     private CustomJSON json;
     private ArrayList<Integer> songQueue;
     private int currentIndex = -1;
+    private boolean minimized=false;
 
 
     private CustomBasicPlayer basicPlayer;
@@ -150,6 +149,20 @@ public class MainSwing {
 
         jFrame = new JFrame();
         SwingUtilities.updateComponentTreeUI(jFrame);
+        jFrame.addWindowStateListener(new WindowStateListener(){
+
+            @Override
+            public void windowStateChanged(WindowEvent e) {
+                if (jFrame.getState()==1){
+                   // System.out.println("Minimized");
+                    minimized=true;
+                } else {
+                   // System.out.println("Not minimized");
+                    minimized=false;
+                }
+
+            }
+        });
 
         jFrame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
@@ -744,13 +757,20 @@ public class MainSwing {
     }
 
     public void playNextSong() {
+        String alb, song, artist;
+
         if (!isShuffle()) {
+
             int viewRow = songTable.convertRowIndexToView(songSelecRow);
             int modelRow = songTable.convertRowIndexToModel(viewRow);
             songTable.setRowSelectionInterval(modelRow + 1, modelRow + 1);
             String album = (String) songTable.getValueAt(modelRow + 1, 2);
             setAlbumImage(album);
             playSong(modelRow + 1);
+            alb = (String) songTable.getValueAt(modelRow + 1, 0);
+           song =(String) songTable.getValueAt(modelRow + 1, 1);
+            artist = (String) songTable.getValueAt(modelRow + 1, 2);
+
 
         } else {
             Random r = new Random();
@@ -760,8 +780,13 @@ public class MainSwing {
             String album = (String) songTable.getValueAt(randomSpot, 2);
             setAlbumImage(album);
             playSong(randomSpot);
+            artist = (String) songTable.getValueAt(randomSpot + 1, 0);
+            song =(String) songTable.getValueAt(randomSpot + 1, 1);
+            alb = (String) songTable.getValueAt(randomSpot + 1, 2);
 
         }
+        new OpaqueInfoPanel(song, artist, alb);
+
 
     }
 
@@ -848,7 +873,9 @@ public class MainSwing {
 
             JMenu viewMenu = new JMenu("View");
             menuBar.add(viewMenu);
-            item = new JMenuItem("Default View");
+            viewMenu.setMnemonic(KeyEvent.VK_V);
+
+            item = new JMenuItem("Main");
             item.addActionListener(new ActionListener() {
                 @Override
                 public void actionPerformed(ActionEvent e) {
@@ -861,6 +888,13 @@ public class MainSwing {
                     jFrame.setVisible(true);
                 }
             });
+            viewMenu.add(item);
+            item.setMnemonic(KeyEvent.VK_M);
+            item = new JMenuItem("artist");
+            viewMenu.add(item);
+            item = new JMenuItem("album");
+            viewMenu.add(item);
+            item = new JMenuItem("miniplayer");
             viewMenu.add(item);
             return menuBar;
         }
@@ -882,6 +916,8 @@ public class MainSwing {
             menuBar.setPreferredSize(new Dimension((int) jFrame.getSize().getWidth(), 35));
 
             JMenu menu = new JMenu("File");
+            menu.setMnemonic(KeyEvent.VK_F);
+
             menuBar.add(menu);
             JMenuItem item = new JMenuItem("Add Song");
             item.addActionListener(new ActionListener() {
@@ -980,8 +1016,15 @@ public class MainSwing {
             }
 
             JMenu viewMenu = new JMenu("View");
+            viewMenu.setMnemonic(KeyEvent.VK_V);
+
             menuBar.add(viewMenu);
-            item = new JMenuItem("miniPlayer View");
+            item = new JMenuItem("artist");
+            viewMenu.add(item);
+            item = new JMenuItem("album");
+            viewMenu.add(item);
+            item = new JMenuItem("miniPlayer");
+
             item.addActionListener(new ActionListener() {
 
                 @Override
@@ -995,7 +1038,26 @@ public class MainSwing {
             });
             viewMenu.add(item);
 
-            item = new JMenuItem("Default View");
+            JMenu Preferences = new JMenu("Preferences");
+            //viewMenu.setMnemonic(KeyEvent.VK_P);
+
+            //menuBar.add(Preferences);
+            item = new JMenuItem("Color Scheme");
+            Preferences.add(item);
+            item.addActionListener(new ActionListener(){
+
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    Color c = JColorChooser.showDialog(null,"choose a Color", null);
+                    if (c!=null){
+                        UIManager.put("Panel.Background", c);
+                        SwingUtilities.updateComponentTreeUI(jFrame);
+
+                    }
+                }
+            });
+
+            item = new JMenuItem("Main");
             item.addActionListener(new ActionListener() {
 
                 @Override
@@ -1007,7 +1069,7 @@ public class MainSwing {
                     // menuBar.remove(playlistMenu);
                 }
             });
-            item = new JMenuItem("Artist View");
+            item = new JMenuItem("Artist");
             item.addActionListener(swapperListener);
             viewMenu.add(item);
             return menuBar;
