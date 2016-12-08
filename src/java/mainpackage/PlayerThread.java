@@ -55,38 +55,6 @@ public class PlayerThread extends BasicPlayer implements BasicPlayerListener, Ru
             e.printStackTrace();
         }
 
-//        mainSwing.getMusicSlider().addChangeListener(new ChangeListener() {
-//            @Override
-//            public void stateChanged(ChangeEvent e) {
-//                System.out.println(e.getSource());
-//                //if (mainSwing.getMusicSlider().getValueIsAdjusting()) {
-//                if (((JSlider) e.getSource()).getValueIsAdjusting()) {
-//                    int skipInt = mainSwing.getMusicSlider().getValue() * 10000;
-//                    if (!test) {
-//                        System.out.println("sam");
-//                        //skipBytes(skipInt);
-//                        try {
-//                            test = true;
-//                            controller.seek(skipInt);
-//                            test = false;
-//                        } catch (BasicPlayerException e1) {
-//                            e1.printStackTrace();
-//                        }
-//
-//                    }
-//                    System.out.println(mainSwing.getCurrentSong().getTitle());
-//
-//
-//                    System.out.println("skipInt didn't stall");
-//
-//
-//                    System.out.println("Out of seek");
-//                }
-//
-//
-//            }
-//        });
-
     }
 
     @Override
@@ -129,8 +97,9 @@ public class PlayerThread extends BasicPlayer implements BasicPlayerListener, Ru
             e.printStackTrace();
         }
     }
+
     @Override
-    public long seek(long k){
+    public long seek(long k) {
         try {
             return controller.seek(k);
         } catch (BasicPlayerException e) {

@@ -310,7 +310,7 @@ public class CustomJSON {
                     if (title != null & artist != null) {
                         if (title.equalsIgnoreCase(mainSwing.getCurrentSong().getTitle()) && artist.equalsIgnoreCase(mainSwing.getCurrentSong().getArtist())) {
                             System.out.println("Title: " + title + "\nArtist: " + artist);
-                            songTable.setRowSelectionInterval(0,0);
+                            songTable.setRowSelectionInterval(0, 0);
                         }
                     }
                 }
@@ -488,7 +488,7 @@ public class CustomJSON {
                 int viewRow = songTable.convertRowIndexToView(songTable.getSelectedRow());
                 int modelRow = songTable.convertRowIndexToModel(viewRow);
                 mainSwing.playSong(modelRow);
-                String album = (String)songTable.getValueAt(modelRow,2);
+                String album = (String) songTable.getValueAt(modelRow, 2);
                 mainSwing.setAlbumImage(album);
             }
         });
