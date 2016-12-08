@@ -94,7 +94,7 @@ public class MainSwing {
     JLabel viewTitle = new JLabel("View: ");
     JComboBox switchView;
     private AlbumPanel albumPanel;
-    private ArtistView  AV;
+    private ArtistView AV;
     private JTextField searchField = new JTextField(8);
     private TableRowSorter<TableModel> rowSorter = null;
     private final JFileChooser fileChooser = new JFileChooser();
@@ -128,7 +128,6 @@ public class MainSwing {
     public enum PlayerState {
         MAIN, ARTIST, ALBUM
     }
-
 
 
     public static void main(String[] args) {
@@ -257,11 +256,12 @@ public class MainSwing {
 
             @Override
             public void mouseReleased(MouseEvent e) {
-                int skipInt = musicSlider.getValue();
-                    System.out.println("skipInt");
-                    //skipBytes(skipInt);
-
-                        basicPlayer.getThread().seek(skipInt);
+                Point p = e.getPoint();
+                double percent = p.x / ((double) musicSlider.getWidth());
+                int range = musicSlider.getMaximum() - musicSlider.getMinimum();
+                double newVal = range * percent;
+                int result = (int)(musicSlider.getMinimum() + newVal);
+                basicPlayer.getThread().seek(result);
 
 
             }
@@ -359,32 +359,31 @@ public class MainSwing {
     }
 
 
-
-    private ActionListener swapperListener = new ActionListener(){
+    private ActionListener swapperListener = new ActionListener() {
         @Override
         public void actionPerformed(ActionEvent e) {
-            String view = (String)switchView.getSelectedItem();
-            if(view.equalsIgnoreCase("Main View")){
-                    currentState = PlayerState.MAIN;
-                    AV.clearAVSongTable();
-                    mainPanel.add(infoMainPanel,BorderLayout.NORTH);
-                    jFrame.setContentPane(mainPanel);
-                    Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
-                    jFrame.setSize(screenSize.width / 2, screenSize.height);
-                    jFrame.revalidate();
-            } else if(view.equalsIgnoreCase("Artist")){
-                    currentState = PlayerState.ARTIST;
-                    AV.clearAVSongTable();
-                    if(AV!=null) {
-                        AV.setUpViewForArtist(jFrame, infoMainPanel);
-                    }
-            } else if(view.equalsIgnoreCase("Album")){
-                    currentState = PlayerState.ALBUM;
-                    AV.clearAVSongTable();
-                    if(AV!=null) {
-                        AV.setUpViewForAlbum(jFrame, infoMainPanel);
-                    }
-            }else {
+            String view = (String) switchView.getSelectedItem();
+            if (view.equalsIgnoreCase("Main View")) {
+                currentState = PlayerState.MAIN;
+                AV.clearAVSongTable();
+                mainPanel.add(infoMainPanel, BorderLayout.NORTH);
+                jFrame.setContentPane(mainPanel);
+                Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+                jFrame.setSize(screenSize.width / 2, screenSize.height);
+                jFrame.revalidate();
+            } else if (view.equalsIgnoreCase("Artist")) {
+                currentState = PlayerState.ARTIST;
+                AV.clearAVSongTable();
+                if (AV != null) {
+                    AV.setUpViewForArtist(jFrame, infoMainPanel);
+                }
+            } else if (view.equalsIgnoreCase("Album")) {
+                currentState = PlayerState.ALBUM;
+                AV.clearAVSongTable();
+                if (AV != null) {
+                    AV.setUpViewForAlbum(jFrame, infoMainPanel);
+                }
+            } else {
                 jFrame.setVisible(false);
                 miniPlayer.add(infoMidPanel);
                 miniPlayer.add(albumPanel);
@@ -397,12 +396,12 @@ public class MainSwing {
     public DocumentListener SearchListener = new DocumentListener() {
         @Override
         public void insertUpdate(DocumentEvent e) {
-            if(!currentState.equals(PlayerState.MAIN)){
+            if (!currentState.equals(PlayerState.MAIN)) {
                 songTable = AV.getAVSongTable();
                 TableModel dm = (TableModel) songTable.getModel();
                 rowSorter = new TableRowSorter<>(dm);
                 songTable.setRowSorter(rowSorter);
-            }else{
+            } else {
                 songTable = backUpSongTable;
                 TableModel dm = (TableModel) songTable.getModel();
                 rowSorter = new TableRowSorter<>(dm);
@@ -421,12 +420,12 @@ public class MainSwing {
 
         @Override
         public void removeUpdate(DocumentEvent e) {
-            if(!currentState.equals(PlayerState.MAIN)){
+            if (!currentState.equals(PlayerState.MAIN)) {
                 songTable = AV.getAVSongTable();
                 TableModel dm = (TableModel) songTable.getModel();
                 rowSorter = new TableRowSorter<>(dm);
                 songTable.setRowSorter(rowSorter);
-            }else{
+            } else {
                 songTable = backUpSongTable;
                 TableModel dm = (TableModel) songTable.getModel();
                 rowSorter = new TableRowSorter<>(dm);
@@ -508,9 +507,9 @@ public class MainSwing {
     private ActionListener nextListener = new ActionListener() {
         @Override
         public void actionPerformed(ActionEvent e) {
-            if(!currentState.equals(PlayerState.MAIN)){
+            if (!currentState.equals(PlayerState.MAIN)) {
                 songTable = AV.getAVSongTable();
-            }else{
+            } else {
                 songTable = backUpSongTable;
             }
 
@@ -623,9 +622,9 @@ public class MainSwing {
         @Override
         public void actionPerformed(ActionEvent e) {
 
-            if(!currentState.equals(PlayerState.MAIN)){
+            if (!currentState.equals(PlayerState.MAIN)) {
                 songTable = AV.getAVSongTable();
-            }else{
+            } else {
                 songTable = backUpSongTable;
             }
             if (!isPlaying() && !songTable.isRowSelected(songTable.getSelectedRow())) {
@@ -661,9 +660,9 @@ public class MainSwing {
 
         public void mousePressed(MouseEvent me) {
 
-            if(!currentState.equals(PlayerState.MAIN)){
+            if (!currentState.equals(PlayerState.MAIN)) {
                 songTable = AV.getAVSongTable();
-            }else{
+            } else {
                 songTable = backUpSongTable;
             }
             JTable table = (JTable) me.getSource();
@@ -707,9 +706,9 @@ public class MainSwing {
     }
 
     public void playSong(int row) {
-        if(!currentState.equals(PlayerState.MAIN)){
+        if (!currentState.equals(PlayerState.MAIN)) {
             songTable = AV.getAVSongTable();
-        }else{
+        } else {
             songTable = backUpSongTable;
         }
 
