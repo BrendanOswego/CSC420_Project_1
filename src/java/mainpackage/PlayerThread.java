@@ -2,10 +2,15 @@ package mainpackage;
 
 import javazoom.jlgui.basicplayer.*;
 
+import javax.sound.sampled.AudioInputStream;
+import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.UnsupportedAudioFileException;
 import javax.swing.*;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
+import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
@@ -20,30 +25,67 @@ import static javazoom.jlgui.basicplayer.BasicPlayerEvent.EOM;
  */
 public class PlayerThread extends BasicPlayer implements BasicPlayerListener, Runnable {
 
-    private BasicPlayer player;
     private BasicController controller;
-    private Long totalTime;
-    private Long currentTime;
-    private int totalMili;
-    private int currentMili;
-    private MainSwing mainSwing;
-    private boolean changingValue = false;
+    MainSwing mainSwing;
+    private int totalBytes;
+    private int currentBytes;
+    BasicPlayer player;
     TimeWorker worker;
     BasicPlayerEvent event;
+    private int m_status = -1;
+    private AudioInputStream m_audioInputStream;
+    private File m_dataSource;
+    public boolean test = false;
 
     public PlayerThread(String fileName, MainSwing mainSwing) {
         this.mainSwing = mainSwing;
-        this.player = new BasicPlayer();
-        this.controller = (BasicController)player;
-        this.player.addBasicPlayerListener(this);
-        currentMili = 0;
-        currentTime = 0L;
-        File f = new File("src/resources/music/" + fileName + ".mp3");
+        player = new BasicPlayer();
+        controller = (BasicController) player;
+        player.addBasicPlayerListener(this);
+        File file = new File("src/resources/music/" + fileName + ".mp3");
+        m_dataSource = file;
         try {
-            controller.open(f);
+            m_audioInputStream = AudioSystem.getAudioInputStream(file);
+        } catch (UnsupportedAudioFileException | IOException e) {
+            e.printStackTrace();
+        }
+        try {
+            controller.open(file);
         } catch (BasicPlayerException e) {
             e.printStackTrace();
         }
+
+//        mainSwing.getMusicSlider().addChangeListener(new ChangeListener() {
+//            @Override
+//            public void stateChanged(ChangeEvent e) {
+//                System.out.println(e.getSource());
+//                //if (mainSwing.getMusicSlider().getValueIsAdjusting()) {
+//                if (((JSlider) e.getSource()).getValueIsAdjusting()) {
+//                    int skipInt = mainSwing.getMusicSlider().getValue() * 10000;
+//                    if (!test) {
+//                        System.out.println("sam");
+//                        //skipBytes(skipInt);
+//                        try {
+//                            test = true;
+//                            controller.seek(skipInt);
+//                            test = false;
+//                        } catch (BasicPlayerException e1) {
+//                            e1.printStackTrace();
+//                        }
+//
+//                    }
+//                    System.out.println(mainSwing.getCurrentSong().getTitle());
+//
+//
+//                    System.out.println("skipInt didn't stall");
+//
+//
+//                    System.out.println("Out of seek");
+//                }
+//
+//
+//            }
+//        });
 
     }
 
@@ -51,6 +93,7 @@ public class PlayerThread extends BasicPlayer implements BasicPlayerListener, Ru
     public void run() {
         try {
             controller.play();
+            //player.play();
             worker = new TimeWorker();
             worker.execute();
         } catch (BasicPlayerException e) {
@@ -71,6 +114,7 @@ public class PlayerThread extends BasicPlayer implements BasicPlayerListener, Ru
     public void stop() {
         try {
             controller.stop();
+            worker.cancel(true);
         } catch (BasicPlayerException e) {
             e.printStackTrace();
         }
@@ -80,26 +124,40 @@ public class PlayerThread extends BasicPlayer implements BasicPlayerListener, Ru
     public void resume() {
         try {
             controller.resume();
+
         } catch (BasicPlayerException e) {
             e.printStackTrace();
         }
+    }
+    @Override
+    public long seek(long k){
+        try {
+            return controller.seek(k);
+        } catch (BasicPlayerException e) {
+            e.printStackTrace();
+        }
+        return -1;
     }
 
 
     @Override
     public void opened(Object o, Map map) {
-        this.totalTime = (Long) map.get("duration");
-        this.totalMili = (int) (totalTime / 1000);
-        mainSwing.getMusicSlider().setMaximum(totalMili);
-        System.out.println("Total Time: " + totalTime);
+        totalBytes = (int) map.get("mp3.length.bytes");
+        System.out.println("Total Bytes: " + totalBytes);
+        mainSwing.getMusicSlider().setMaximum(totalBytes);
         System.out.println("Properties: " + map.toString());
     }
 
     @Override
     public void progress(int i, long l, byte[] bytes, Map map) {
-        this.currentTime = l;
-        this.currentMili = (int) (currentTime / 1000);
+        this.currentBytes = i;
     }
+
+    @Override
+    public long skipBytes(long k) {
+        return this.skipBytes(k);
+    }
+
 
     @Override
     public void stateUpdated(BasicPlayerEvent event) {
@@ -111,28 +169,14 @@ public class PlayerThread extends BasicPlayer implements BasicPlayerListener, Ru
         this.controller = event;
     }
 
-    public int getMaxInMili() {
-        return this.totalMili;
-    }
-
-    public int getCurrentMili() {
-        return this.currentMili;
-    }
-
-    class TimeWorker extends SwingWorker<Integer, Void> {
-
+    class TimeWorker extends SwingWorker<Void, Void> {
         @Override
-        protected Integer doInBackground() throws Exception {
-            if (mainSwing.isPlaying()) {
-                while (getCurrentMili() < getMaxInMili() || event.getValue() != BasicPlayerEvent.STOPPED) {
-                    System.out.println("Current Time in mili: " + getCurrentMili());
-                    mainSwing.getMusicSlider().setValue(getCurrentMili());
-                    System.out.println("Music Slider in mili: " + mainSwing.getMusicSlider().getValue());
-                    Thread.sleep(1000);
-                }
-                return null;
+        protected Void doInBackground() throws Exception {
+            while (currentBytes < totalBytes) {
+                System.out.println("Current Time in bytes: " + currentBytes);
+                mainSwing.getMusicSlider().setValue(currentBytes);
+                Thread.sleep(1000);
             }
-
 
             return null;
         }
@@ -140,11 +184,17 @@ public class PlayerThread extends BasicPlayer implements BasicPlayerListener, Ru
         @Override
         public void done() {
             System.out.println("Music Player Stopped");
-            stop();
+            if (currentBytes < totalBytes) {
+                stop();
+            } else {
+                mainSwing.playNextSong();
+            }
         }
     }
 
-    public BasicPlayerEvent getEvent(){
+    public BasicPlayerEvent getEvent() {
         return this.event;
     }
+
+
 }
