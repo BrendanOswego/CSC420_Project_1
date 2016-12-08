@@ -90,8 +90,6 @@ public class MainSwing {
     JSlider musicSlider = new JSlider(HORIZONTAL);
     private JButton helpButton;
     private JButton shuffleButton;
-    JLabel viewTitle = new JLabel("View By: ");
-    JButton switchView;
     private JSlider volumeSlider;
     JLabel viewTitle = new JLabel("View: ");
     JComboBox switchView;
@@ -386,6 +384,12 @@ public class MainSwing {
                     if(AV!=null) {
                         AV.setUpViewForAlbum(jFrame, infoMainPanel);
                     }
+            }else {
+                jFrame.setVisible(false);
+                miniPlayer.add(infoMidPanel);
+                miniPlayer.add(albumPanel);
+                miniPlayer.setVisible(true);
+                miniPlayer.pack();
             }
 
         }
@@ -449,11 +453,7 @@ public class MainSwing {
         @Override
         public void actionPerformed(ActionEvent e) {
             if (!isShuffle()) { //if shuffle is off
-                if(!currentState.equals(PlayerState.MAIN)){
-                    songTable = AV.getAVSongTable();
-                }else{
-                    songTable = backUpSongTable;
-                }
+
                 if (songTable.getSelectedRow() > 0) {
                     int viewRow = songTable.convertRowIndexToView(songTable.getSelectedRow());
                     int modelRow = songTable.convertRowIndexToModel(viewRow);
@@ -471,26 +471,6 @@ public class MainSwing {
                     playSong(modelRow - 1);
                     songTable.setRowSelectionInterval(songTable.getSelectedRow() - 1, songTable.getSelectedRow() - 1);
                     currentIndex = songTable.getRowCount() - 1;
-                if (player != null && player.getPlayerStatus() == 1) {
-                    player.stop();
-                    player = null;
-                }
-                try {
-                    if (songTable.getSelectedRow() > 0) {
-                        int viewRow = songTable.convertRowIndexToView(songTable.getSelectedRow());
-                        int modelRow = songTable.convertRowIndexToModel(viewRow);
-                        String name = (String) songTable.getValueAt(modelRow - 1, 0);
-                        String album = (String) songTable.getValueAt(modelRow - 1, 2);
-                        String totalTime = (String) songTable.getValueAt(modelRow - 1, 3);
-                        String artist = (String) songTable.getValueAt(modelRow - 1, 1);
-                        setAlbumImage(album);
-                        lblArtist.setText(artist);
-                        lblTitle.setText(name);
-                        lblTotalTime.setText(totalTime);
-                        FileInputStream inputStream = new FileInputStream("src/resources/music/" + name + ".mp3");
-                        player = new MusicPlayer(inputStream);
-                        songTable.setRowSelectionInterval(songTable.getSelectedRow() - 1, songTable.getSelectedRow() - 1);
-                        currentIndex = songTable.getRowCount() - 1;
 
                 } else {
                     System.out.println(songTable.getRowCount() - 1);
@@ -732,10 +712,7 @@ public class MainSwing {
         }else{
             songTable = backUpSongTable;
         }
-        if (player != null && player.getPlayerStatus() == 1) {
-            player.stop();
-            player = null;
-        }
+
 
         String name = (String) songTable.getValueAt(row, 0);
         String totalTime = (String) songTable.getValueAt(row, 3);
