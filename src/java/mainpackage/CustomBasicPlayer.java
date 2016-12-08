@@ -39,6 +39,7 @@ public class CustomBasicPlayer {
         thread.run();
         isPlaying = true;
 
+
     }
 
     public void stop() {

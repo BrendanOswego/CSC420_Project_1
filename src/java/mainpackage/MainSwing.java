@@ -88,7 +88,7 @@ public class MainSwing {
     JSlider musicSlider = new JSlider(HORIZONTAL);
     private JButton helpButton;
     private JButton shuffleButton;
-    private JSlider volumeSlider;
+    private JSlider volumeSlider = new JSlider(HORIZONTAL);
     JLabel viewTitle = new JLabel("View: ");
     JComboBox switchView;
     private AlbumPanel albumPanel;
@@ -256,6 +256,40 @@ public class MainSwing {
                 basicPlayer.getThread().seek(400000);
             }
         });
+        volumeSlider.addMouseListener(new MouseListener(){
+
+            @Override
+            public void mouseClicked(MouseEvent e) {
+
+            }
+
+            @Override
+            public void mousePressed(MouseEvent e) {
+
+            }
+
+            @Override
+            public void mouseReleased(MouseEvent e) {
+                Point p = e.getPoint();
+                double percent = p.x / ((double) volumeSlider.getWidth());
+                System.out.println(percent);
+                basicPlayer.getThread().setVolume(percent);
+                //int range = musicSlider.getMaximum() - musicSlider.getMinimum();
+                //double newVal = range * percent;
+                //int result = (int)(musicSlider.getMinimum() + newVal);
+                //basicPlayer.getThread().seek(result);
+            }
+
+            @Override
+            public void mouseEntered(MouseEvent e) {
+
+            }
+
+            @Override
+            public void mouseExited(MouseEvent e) {
+
+            }
+        });
         musicSlider.addMouseListener(new MouseListener() {
             @Override
             public void mouseClicked(MouseEvent e) {
@@ -308,12 +342,13 @@ public class MainSwing {
 
         searchField.getDocument().addDocumentListener(SearchListener);
 
+        volumeSlider.setMaximum(100);
         centerPanel.add(scrollPane);
         soundControlPanel.add(previousButton);
         soundControlPanel.add(playPauseButton);
         soundControlPanel.add(nextButton);
         soundControlPanel.add(shuffleButton);
-
+        musicPanel.add(volumeSlider);
         musicPanel.add(currentTime);
         musicPanel.add(musicSlider);
         musicPanel.add(lblTotalTime);

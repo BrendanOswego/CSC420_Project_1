@@ -25,7 +25,7 @@ import static javazoom.jlgui.basicplayer.BasicPlayerEvent.EOM;
  */
 public class PlayerThread extends BasicPlayer implements BasicPlayerListener, Runnable {
 
-    private BasicController controller;
+    BasicController controller;
     MainSwing mainSwing;
     private int totalBytes;
     private int currentBytes;
@@ -62,8 +62,18 @@ public class PlayerThread extends BasicPlayer implements BasicPlayerListener, Ru
         try {
             controller.play();
             //player.play();
+            controller.setGain(.85);
+
             worker = new TimeWorker();
             worker.execute();
+        } catch (BasicPlayerException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void setVolume(double v){
+        try {
+            controller.setGain(v);
         } catch (BasicPlayerException e) {
             e.printStackTrace();
         }
@@ -92,7 +102,6 @@ public class PlayerThread extends BasicPlayer implements BasicPlayerListener, Ru
     public void resume() {
         try {
             controller.resume();
-
         } catch (BasicPlayerException e) {
             e.printStackTrace();
         }
