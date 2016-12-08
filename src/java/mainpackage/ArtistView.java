@@ -4,8 +4,7 @@ import net.miginfocom.swing.MigLayout;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ComponentAdapter;
-import java.awt.event.ComponentEvent;
+import java.awt.event.*;
 import java.util.*;
 import java.util.List;
 
@@ -22,21 +21,38 @@ public class ArtistView {
     JFrame mainFrame;
     JPanel infoMidPanel;
     JPanel mainPanel;
-    private JTable songTable;
+    JPanel artistPanel;
+    JPanel albumPanel;
+    boolean panelSelected = false;
+    private JTable songTable = new JTable();
+    private String[] colNames = {"Song","Artist", "Album", "Duration"};
+    TableModel tableModel = new TableModel(colNames, 0);
+    JPanel currentlySelectedPanel;
+    JScrollPane scrollPane;
+    MainSwing ms;
 
 
-
-     public void setUpViewForArtist(JFrame main,JPanel infoMidPanel,JButton switcher,JLabel viewTitle){
+    ArtistView(MainSwing mainSwing){
+        ms = mainSwing;
+    }
+    public void clearAVSongTable(){
+        while (tableModel.getRowCount() > 0) {
+            tableModel.removeRow(0);
+        }
+    }
+     public void setUpViewForArtist(JFrame main,JPanel infoMidPanel){
+         panelSelected = false;
+         scrollPane = new JScrollPane(songTable);
+         songTable.addMouseListener(ms.songSelectListener);
+         setupTableMethods();
          mainFrame = main;
          Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
          mainFrame.setSize((screenSize.width / 2) + 500, screenSize.height-50);
          this.infoMidPanel = infoMidPanel;
-         infoMidPanel.add(viewTitle,"cell 0 0");
-         infoMidPanel.add(switcher, "cell 0 0");
          mainPanel = new JPanel();
          mainPanel.setLayout(new MigLayout("fill"));
          mainPanel.add(infoMidPanel,"north");
-         JPanel artistPanel = new JPanel();
+         artistPanel = new JPanel();
          artistPanel.setPreferredSize(new Dimension(700,870));
          artistPanel.setLayout(new MigLayout("fill,wrap 3"));
          for(String artist: setOfArtist){
@@ -45,6 +61,7 @@ public class ArtistView {
                      JPanel cell = new JPanel();
                      cell.setLayout(new MigLayout());
                      cell.setBorder(BorderFactory.createRaisedBevelBorder());
+                     cell.addMouseListener(new CellListener());
                      PicturePanel picturePanel = new PicturePanel(sortedArtistHashMap.get(artist).getFirst().getAlbum());
                      picturePanel.setBorder(BorderFactory.createLineBorder(Color.black));
                      picturePanel.repaint();
@@ -57,6 +74,7 @@ public class ArtistView {
                  JPanel cell = new JPanel();
                  cell.setLayout(new MigLayout());
                  cell.setBorder(BorderFactory.createRaisedBevelBorder());
+                 cell.addMouseListener(new CellListener());
                  PicturePanel picturePanel = new PicturePanel(sortedArtistHashMap.get(artist).getFirst().getAlbum());
                  picturePanel.setBorder(BorderFactory.createLineBorder(Color.black));
                  picturePanel.repaint();
@@ -66,26 +84,204 @@ public class ArtistView {
                  artistPanel.add(cell, "push,growy");
              }
          }
-         mainFrame.addComponentListener(new ComponentAdapter() {
-             @Override
-             public void componentResized(ComponentEvent e) {
-                 super.componentResized(e);
-                 System.out.println(mainFrame.getSize());
-             }
-         });
-         mainPanel.add(new JScrollPane(artistPanel),"push");
+         mainPanel.add(new JScrollPane(artistPanel),"push,split 2");
+         mainPanel.add(scrollPane,"push,grow");
          mainFrame.setContentPane(mainPanel);
          mainFrame.revalidate();
     }
+    public void setUpViewForAlbum(JFrame main,JPanel infoMidPanel){
+        panelSelected = false;
+        scrollPane = new JScrollPane(songTable);
+        songTable.addMouseListener(ms.songSelectListener);
+        setupTableMethods();
+        mainFrame = main;
+        Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+        mainFrame.setSize((screenSize.width / 2) + 500, screenSize.height-50);
+        this.infoMidPanel = infoMidPanel;
+        mainPanel = new JPanel();
+        mainPanel.setLayout(new MigLayout("fill"));
+        mainPanel.add(infoMidPanel,"north");
+        albumPanel = new JPanel();
+        albumPanel.setPreferredSize(new Dimension(700,870));
+        albumPanel.setLayout(new MigLayout("fill,wrap 3"));
+        for(String album: setOfAlbums){
+            if(album.equals("UnknownAlbum")){
+                if(sortedAlbumHashMap.get(album).size() >= 1) {
+                    JPanel cell = new JPanel();
+                    cell.setLayout(new MigLayout());
+                    cell.setBorder(BorderFactory.createRaisedBevelBorder());
+                    cell.addMouseListener(new CellListener());
+                    PicturePanel picturePanel = new PicturePanel(sortedAlbumHashMap.get(album).getFirst().getAlbum());
+                    picturePanel.setBorder(BorderFactory.createLineBorder(Color.black));
+                    picturePanel.repaint();
+                    JLabel artistName = new JLabel(album);
+                    cell.add(picturePanel, "grow,push,wrap");
+                    cell.add(artistName, "grow,push");
+                    albumPanel.add(cell, "push,grow,gapleft 10,gapright 10");
+                }
+            }else {
+                JPanel cell = new JPanel();
+                cell.setLayout(new MigLayout());
+                cell.setBorder(BorderFactory.createRaisedBevelBorder());
+                cell.addMouseListener(new CellListener());
+                PicturePanel picturePanel = new PicturePanel(sortedAlbumHashMap.get(album).getFirst().getAlbum());
+                picturePanel.setBorder(BorderFactory.createLineBorder(Color.black));
+                picturePanel.repaint();
+                JLabel artistName = new JLabel(album);
+                cell.add(picturePanel, "wrap");
+                cell.add(artistName, "grow,push");
+                albumPanel.add(cell, "push,growy");
+            }
+        }
+        mainPanel.add(new JScrollPane(albumPanel),"push,split 2");
+        mainPanel.add(scrollPane,"push,grow");
+        mainFrame.setContentPane(mainPanel);
+        mainFrame.revalidate();
+    }
+    private class CellListener implements MouseListener {
+
+        @Override
+        public void mouseClicked(MouseEvent event) {
+                    /* source is the object that got clicked
+                     *
+                     * If the source is actually a JPanel,
+                     * then will the object be parsed to JPanel
+                     * since we need the setBackground() method
+                     */
+            while (tableModel.getRowCount() > 0) {
+                tableModel.removeRow(0);
+            }
+            Object source = event.getSource();
+            if (source instanceof JPanel) {
+                JPanel panelPressed = (JPanel) source;
+                if (!panelSelected) {
+                    panelPressed.setBackground(Color.cyan);
+                    panelSelected = true;
+                    currentlySelectedPanel = panelPressed;
+                    Component c = panelPressed.getComponent(1);
+                    if (ms.currentState.equals(MainSwing.PlayerState.ARTIST)) {
+                        if (c instanceof JLabel) {
+                            String artist = ((JLabel) c).getText();
+                            for (Song song : sortedArtistHashMap.get(artist)) {
+                                Object[] row = {song.getTitle(), song.getArtist(), song.getAlbum(), song.getDuration()};
+                                tableModel.addRow(row);
+                            }
+                            scrollPane.getViewport().revalidate();
+                        }
+                        } else if (ms.currentState.equals(MainSwing.PlayerState.ALBUM)) {
+                            c = panelPressed.getComponent(1);
+                            if (c instanceof JLabel) {
+                                String artist = ((JLabel) c).getText();
+                                for (Song song : sortedAlbumHashMap.get(artist)) {
+                                    Object[] row = {song.getTitle(), song.getArtist(), song.getAlbum(), song.getDuration()};
+                                    tableModel.addRow(row);
+                                }
+                                scrollPane.getViewport().revalidate();
+                            }
+                        }
+                    } else {
+                            if (currentlySelectedPanel != null) {
+                                currentlySelectedPanel.setBackground(null);
+                                currentlySelectedPanel = panelPressed;
+                                panelPressed.setBackground(Color.cyan);
+                                Component c = panelPressed.getComponent(1);
+                                if (c instanceof JLabel) {
+                                    if (ms.currentState.equals(MainSwing.PlayerState.ARTIST)) {
+                                        String artist = ((JLabel) c).getText();
+                                        for (Song song : sortedArtistHashMap.get(artist)) {
+                                            Object[] row = {song.getTitle(), song.getArtist(), song.getAlbum(), song.getDuration()};
+                                            tableModel.addRow(row);
+                                        }
+                                        scrollPane.getViewport().revalidate();
+                                    } else if (ms.currentState.equals(MainSwing.PlayerState.ALBUM)) {
+                                        String artist = ((JLabel) c).getText();
+                                        for (Song song : sortedAlbumHashMap.get(artist)) {
+                                            Object[] row = {song.getTitle(), song.getArtist(), song.getAlbum(), song.getDuration()};
+                                            tableModel.addRow(row);
+                                        }
+                                        scrollPane.getViewport().revalidate();
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+            }
+        @Override
+        public void mousePressed(MouseEvent e) {}
+
+        @Override
+        public void mouseReleased(MouseEvent e) {}
+
+        @Override
+        public void mouseEntered(MouseEvent e) {}
+
+        @Override
+        public void mouseExited(MouseEvent e) {}
+        }
+
+
     public void updateListOfSongs(List<Song> meep,CustomJSON json){
         listOfSongs = meep;
         sortListByArtist();
+        sortListByAlbum();
         if(this.json == null) {
             this.json = json;
         }
     }
 
+    public void setupTableMethods() {
+        songTable.setDragEnabled(true);
+        songTable.setFocusable(true);
+        songTable.setRowSelectionAllowed(true);
+        songTable.setFillsViewportHeight(true);
+        songTable.setAutoCreateRowSorter(true);
+        songTable.setDefaultRenderer(Object.class, new CustomCellRender());
+        songTable.setComponentPopupMenu(showPopupMenu());
+        songTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        songTable.setModel(tableModel);
+    }
+    public JPopupMenu showPopupMenu() {
 
+        JPopupMenu optionMenu = new JPopupMenu();
+        JMenuItem itemPlay = new JMenuItem("Play");
+        optionMenu.add(itemPlay);
+        JMenuItem itemEdit = new JMenuItem("Edit");
+        itemEdit.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                System.out.println(songTable.getSelectedRow() + " " + songTable.getSelectedColumn());
+                int viewRow = songTable.convertRowIndexToView(songTable.getSelectedRow());
+                int modelRow = songTable.convertRowIndexToModel(viewRow);
+                json.editSongInformation((String) songTable.getValueAt(modelRow, 0), (String) songTable.getValueAt(modelRow, 1));
+                //TODO Add a new Frame that shows all the information and once the user presses enter it edits the info for that row
+            }
+        });
+        optionMenu.add(itemEdit);
+        JMenu itemAdd = new JMenu("Add To Playlist");
+
+        for (int i = 0; i < json.getPlaylistNames().size(); i++) {
+            JMenuItem item = new JMenuItem(json.getPlaylistNames().get(i));
+            item.addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    json.addSelectedSongToPlaylist(item.getText());
+                }
+            });
+            itemAdd.add(item);
+        }
+        optionMenu.add(itemAdd);
+        JMenuItem itemDelete = new JMenuItem("Delete");
+        itemDelete.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                json.destroySelectedSong();
+            }
+        });
+        optionMenu.add(itemDelete);
+
+        return optionMenu;
+    }
 
     private void sortListByArtist(){
             sortedArtistHashMap = new HashMap<>();
@@ -106,6 +302,43 @@ public class ArtistView {
                     sortedArtistHashMap.get(song.getArtist()).add(song);
                 }
             }
+        if(ms.currentState.equals(MainSwing.PlayerState.ARTIST)){
+            if(artistPanel != null){
+                artistPanel.removeAll();
+                artistPanel.setPreferredSize(new Dimension(700,870));
+                artistPanel.setLayout(new MigLayout("fill,wrap 3"));
+                for(String artist: setOfArtist){
+                    if(artist.equals("UnknownArtist")){
+                        if(sortedArtistHashMap.get(artist).size() >= 1) {
+                            JPanel cell = new JPanel();
+                            cell.setLayout(new MigLayout());
+                            cell.setBorder(BorderFactory.createRaisedBevelBorder());
+                            cell.addMouseListener(new CellListener());
+                            PicturePanel picturePanel = new PicturePanel(sortedArtistHashMap.get(artist).getFirst().getAlbum());
+                            picturePanel.setBorder(BorderFactory.createLineBorder(Color.black));
+                            picturePanel.repaint();
+                            JLabel artistName = new JLabel(artist);
+                            cell.add(picturePanel, "grow,push,wrap");
+                            cell.add(artistName, "grow,push");
+                            artistPanel.add(cell, "push,grow,gapleft 10,gapright 10");
+                        }
+                    }else {
+                        JPanel cell = new JPanel();
+                        cell.setLayout(new MigLayout());
+                        cell.setBorder(BorderFactory.createRaisedBevelBorder());
+                        cell.addMouseListener(new CellListener());
+                        PicturePanel picturePanel = new PicturePanel(sortedArtistHashMap.get(artist).getFirst().getAlbum());
+                        picturePanel.setBorder(BorderFactory.createLineBorder(Color.black));
+                        picturePanel.repaint();
+                        JLabel artistName = new JLabel(artist);
+                        cell.add(picturePanel, "wrap");
+                        cell.add(artistName, "grow,push");
+                        artistPanel.add(cell, "push,growy");
+                    }
+                }
+                mainPanel.revalidate();
+            }
+        }
     }
     private void sortListByAlbum(){
         sortedAlbumHashMap = new HashMap<>();
@@ -126,6 +359,43 @@ public class ArtistView {
                 sortedAlbumHashMap.get(song.getAlbum()).add(song);
             }
         }
+        if(ms.currentState.equals(MainSwing.PlayerState.ALBUM)){
+            if(albumPanel != null){
+                albumPanel.removeAll();
+                albumPanel.setPreferredSize(new Dimension(700,870));
+                albumPanel.setLayout(new MigLayout("fill,wrap 3"));
+                for(String album: setOfAlbums){
+                    if(album.equals("UnknownAlbum")){
+                        if(sortedAlbumHashMap.get(album).size() >= 1) {
+                            JPanel cell = new JPanel();
+                            cell.setLayout(new MigLayout());
+                            cell.setBorder(BorderFactory.createRaisedBevelBorder());
+                            cell.addMouseListener(new CellListener());
+                            PicturePanel picturePanel = new PicturePanel(sortedAlbumHashMap.get(album).getFirst().getAlbum());
+                            picturePanel.setBorder(BorderFactory.createLineBorder(Color.black));
+                            picturePanel.repaint();
+                            JLabel albumName = new JLabel(album);
+                            cell.add(picturePanel, "grow,push,wrap");
+                            cell.add(albumName, "grow,push");
+                            albumPanel.add(cell, "push,grow,gapleft 10,gapright 10");
+                        }
+                    }else {
+                        JPanel cell = new JPanel();
+                        cell.setLayout(new MigLayout());
+                        cell.setBorder(BorderFactory.createRaisedBevelBorder());
+                        cell.addMouseListener(new CellListener());
+                        PicturePanel picturePanel = new PicturePanel(sortedAlbumHashMap.get(album).getFirst().getAlbum());
+                        picturePanel.setBorder(BorderFactory.createLineBorder(Color.black));
+                        picturePanel.repaint();
+                        JLabel albumName = new JLabel(album);
+                        cell.add(picturePanel, "wrap");
+                        cell.add(albumName, "grow,push");
+                        albumPanel.add(cell, "push,growy");
+                    }
+                }
+                mainPanel.revalidate();
+            }
+        }
     }
 
     class PicturePanel extends JPanel{
@@ -138,9 +408,7 @@ public class ArtistView {
         public void paintComponent(Graphics g) {
             super.paintComponent(g);
                 if (json != null) {
-                    System.out.println("its lit");
                     if (json.getAlbumImage(albumName) != null) {
-                        System.out.println("Drawing in AritistView");
                         g.drawImage(json.getAlbumImage(albumName), 0, 0,
                                 (int) getPreferredSize().getWidth(),
                                 (int) getPreferredSize().getHeight(), null);
@@ -148,6 +416,12 @@ public class ArtistView {
                 }
 
         }
-    }
 
+
+    }
+    public JTable getAVSongTable(){
+        return songTable;
+    }
 }
+
+

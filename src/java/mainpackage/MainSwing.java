@@ -62,6 +62,7 @@ public class MainSwing {
     JLabel lblArtist = new JLabel();
     JLabel lblTotalTime = new JLabel();
     private JTable songTable = new JTable();
+    private JTable backUpSongTable = songTable;
     private JFrame jFrame;
     JPanel infoMidPanel;
     JPanel infoMainPanel;
@@ -72,10 +73,9 @@ public class MainSwing {
     private JButton helpButton;
     private JButton shuffleButton;
     private JSlider volumeSlider;
-    JLabel viewTitle = new JLabel("View By: ");
-    JButton switchView;
+    JLabel viewTitle = new JLabel("View: ");
+    JComboBox switchView;
     private AlbumPanel albumPanel;
-    private JButton switcher;
     private ArtistView  AV;
     private JTextField searchField = new JTextField(8);
     private TableRowSorter<TableModel> rowSorter = null;
@@ -103,7 +103,6 @@ public class MainSwing {
     private String newDuration;
     private ArrayList<Integer> songQueue;
     private int currentIndex = -1;
-    private ArtistView AV;
 
 
 
@@ -223,7 +222,7 @@ public class MainSwing {
 
         //This has to be called before the songTable is added to the center panel
         //And anything that changes the songTable information as well i.e changing the name of a song
-        AV = new ArtistView();
+        AV = new ArtistView(this);
         json = new CustomJSON(songTable, scrollPane, libraryPanel, playlistNames, this, rowSorter);
         json.setupAV(AV);
         json.initializeJson();
@@ -238,7 +237,11 @@ public class MainSwing {
         albumPanel.setPreferredSize(new Dimension(150, 110));
         albumPanel.setBorder(BorderFactory.createLineBorder(Color.BLACK));
 
-        switchView = new JButton("Swap");
+        switchView = new JComboBox();
+        switchView.addItem("Main View");
+        switchView.addItem("Artist");
+        switchView.addItem("Album");
+        switchView.addItem("MiniPlayer");
         switchView.addActionListener(swapperListener);
         JLabel searchLabel = new JLabel("Search");
 
@@ -255,11 +258,10 @@ public class MainSwing {
         musicPanel.add(musicSlider);
         musicPanel.add(lblTotalTime);
         musicPanel.setAlignmentX(CENTER_ALIGNMENT);
-
         infoLeftPanel.add(searchLabel);
         infoLeftPanel.add(searchField,"wrap");
         infoLeftPanel.add(viewTitle);
-        infoLeftPanel.add(switcher);
+        infoLeftPanel.add(switchView);
 
         CC componentConstraints = new CC();
         componentConstraints.alignX("center").spanX();
@@ -268,9 +270,6 @@ public class MainSwing {
         infoMidPanel.add(lblArtist, "wrap");
         infoMidPanel.add(soundControlPanel, "wrap, span");
         infoMidPanel.add(musicPanel, "wrap, span");
-        //infoMidPanel.setBackground(Color.GREEN);
-
-        //infoMidPanel.setBorder(BorderFactory.createBevelBorder(RAISED));
 
         infoMainPanel.add(infoMidPanel, "cell 1 0");
         infoMainPanel.add(albumPanel, "cell 2 0");
@@ -312,33 +311,49 @@ public class MainSwing {
          */
 
     }
+
     private ActionListener swapperListener = new ActionListener(){
         @Override
         public void actionPerformed(ActionEvent e) {
-            if(currentState.equals(PlayerState.MAIN)){
-                currentState = PlayerState.ARTIST;
-                infoMainPanel.remove(infoLeftPanel);
-            if(AV!=null) {
-            AV.setUpViewForArtist(jFrame, infoMainPanel, switcher,viewTitle);
-                }
-            }else{
-                currentState = PlayerState.MAIN;
-                infoMainPanel.remove(viewTitle);
-                infoLeftPanel.add(viewTitle);
-                infoLeftPanel.add(switcher);
-                infoMainPanel.add(infoLeftPanel,"cell 0 0");
-                mainPanel.add(infoMainPanel,BorderLayout.NORTH);
-                jFrame.setContentPane(mainPanel);
-                Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
-                jFrame.setSize(screenSize.width / 2, screenSize.height);
-                jFrame.revalidate();
+            String view = (String)switchView.getSelectedItem();
+            if(view.equalsIgnoreCase("Main View")){
+                    currentState = PlayerState.MAIN;
+                    AV.clearAVSongTable();
+                    mainPanel.add(infoMainPanel,BorderLayout.NORTH);
+                    jFrame.setContentPane(mainPanel);
+                    Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+                    jFrame.setSize(screenSize.width / 2, screenSize.height);
+                    jFrame.revalidate();
+            } else if(view.equalsIgnoreCase("Artist")){
+                    currentState = PlayerState.ARTIST;
+                    AV.clearAVSongTable();
+                    if(AV!=null) {
+                        AV.setUpViewForArtist(jFrame, infoMainPanel);
+                    }
+            } else if(view.equalsIgnoreCase("Album")){
+                    currentState = PlayerState.ALBUM;
+                    AV.clearAVSongTable();
+                    if(AV!=null) {
+                        AV.setUpViewForAlbum(jFrame, infoMainPanel);
+                    }
             }
+
         }
     };
     public DocumentListener SearchListener = new DocumentListener() {
         @Override
         public void insertUpdate(DocumentEvent e) {
-
+            if(!currentState.equals(PlayerState.MAIN)){
+                songTable = AV.getAVSongTable();
+                TableModel dm = (TableModel) songTable.getModel();
+                rowSorter = new TableRowSorter<>(dm);
+                songTable.setRowSorter(rowSorter);
+            }else{
+                songTable = backUpSongTable;
+                TableModel dm = (TableModel) songTable.getModel();
+                rowSorter = new TableRowSorter<>(dm);
+                songTable.setRowSorter(rowSorter);
+            }
             String text = searchField.getText();
             System.out.println(text);
             if (text.trim().length() >= 0) {
@@ -352,6 +367,17 @@ public class MainSwing {
 
         @Override
         public void removeUpdate(DocumentEvent e) {
+            if(!currentState.equals(PlayerState.MAIN)){
+                songTable = AV.getAVSongTable();
+                TableModel dm = (TableModel) songTable.getModel();
+                rowSorter = new TableRowSorter<>(dm);
+                songTable.setRowSorter(rowSorter);
+            }else{
+                songTable = backUpSongTable;
+                TableModel dm = (TableModel) songTable.getModel();
+                rowSorter = new TableRowSorter<>(dm);
+                songTable.setRowSorter(rowSorter);
+            }
             String text = searchField.getText();
             System.out.println(text);
             if (text.trim().length() >= 0) {
@@ -376,6 +402,11 @@ public class MainSwing {
                 if (player != null && player.getPlayerStatus() == 1) {
                     player.stop();
                     player = null;
+                }
+                if(!currentState.equals(PlayerState.MAIN)){
+                    songTable = AV.getAVSongTable();
+                }else{
+                    songTable = backUpSongTable;
                 }
                 try {
                     if (songTable.getSelectedRow() > 0) {
@@ -439,6 +470,11 @@ public class MainSwing {
                     player = null;
                 }
                 try {
+                    if(!currentState.equals(PlayerState.MAIN)){
+                        songTable = AV.getAVSongTable();
+                    }else{
+                        songTable = backUpSongTable;
+                    }
                     if (songTable.getSelectedRow() < songTable.getRowCount() - 1) { //If Not on shuffle mode && If no row is selected
                         int viewRow = songTable.convertRowIndexToView(songTable.getSelectedRow());
                         int modelRow = songTable.convertRowIndexToModel(viewRow);
@@ -550,6 +586,11 @@ public class MainSwing {
     private ActionListener playPauseListener = new ActionListener() {
         @Override
         public void actionPerformed(ActionEvent e) {
+            if(!currentState.equals(PlayerState.MAIN)){
+                songTable = AV.getAVSongTable();
+            }else{
+                songTable = backUpSongTable;
+            }
             if (!isPlaying() && !songTable.isRowSelected(songTable.getSelectedRow())) {
                 songTable.setRowSelectionInterval(0, 0);
                 int viewRow = songTable.convertRowIndexToView(songTable.getSelectedRow());
@@ -580,8 +621,14 @@ public class MainSwing {
             //System.out.println(player.getPostion());
         }
     };
-    private MouseListener songSelectListener = new MouseAdapter() {
+    public MouseListener songSelectListener = new MouseAdapter() {
+
         public void mousePressed(MouseEvent me) {
+            if(!currentState.equals(PlayerState.MAIN)){
+                songTable = AV.getAVSongTable();
+            }else{
+                songTable = backUpSongTable;
+            }
             JTable table = (JTable) me.getSource();
             if (me.getClickCount() == 2) {
                 System.out.println("JTable Row Count: " + table.getRowCount());
@@ -614,6 +661,11 @@ public class MainSwing {
     }
 
     public void playSong(int row) {
+        if(!currentState.equals(PlayerState.MAIN)){
+            songTable = AV.getAVSongTable();
+        }else{
+            songTable = backUpSongTable;
+        }
         if (player != null && player.getPlayerStatus() == 1) {
             player.stop();
             player = null;
@@ -637,6 +689,11 @@ public class MainSwing {
     }
 
     public void shufflePlay(int row) {
+        if(!currentState.equals(PlayerState.MAIN)){
+            songTable = AV.getAVSongTable();
+        }else{
+            songTable = backUpSongTable;
+        }
         if (player != null && player.getPlayerStatus() == 1) {
             player.stop();
             player = null;
@@ -965,5 +1022,4 @@ public class MainSwing {
     public JFrame getFrame() {
         return this.jFrame;
     }
-
 }
