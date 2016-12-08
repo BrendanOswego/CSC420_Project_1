@@ -300,6 +300,8 @@ public class MainSwing {
     public void createMiniPlayer() {
         //TODO: set hotkeys
         miniPlayer = new JFrame();
+        miniPlayer.setLayout(new MigLayout("ali 50% 50%"));
+        miniPlayer.setMinimumSize(new Dimension(500,200));
         MiniMenuBar miniMenu = new MiniMenuBar();
         miniPlayer.setFocusable(true);
         miniPlayer.setResizable(false);
@@ -839,6 +841,7 @@ public class MainSwing {
                 public void actionPerformed(ActionEvent e) {
                     miniPlayer.setVisible(false);
                     infoMainPanel.add(infoMidPanel);
+                    infoMainPanel.add(albumPanel);
                     //miniPlayer.add(miniControls);
                     //JPanel miniControls = controls;
                     //miniPlayer.pack();
@@ -986,6 +989,7 @@ public class MainSwing {
                 public void actionPerformed(ActionEvent e) {
                     jFrame.setVisible(false);
                     miniPlayer.add(infoMidPanel);
+                    miniPlayer.add(albumPanel);
                     miniPlayer.setVisible(true);
                     miniPlayer.pack();
                 }
