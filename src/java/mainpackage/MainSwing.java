@@ -785,8 +785,9 @@ public class MainSwing {
             alb = (String) songTable.getValueAt(randomSpot + 1, 2);
 
         }
-        new OpaqueInfoPanel(song, artist, alb);
-
+        if(minimized) {
+            new OpaqueInfoPanel(song, artist, alb);
+        }
 
     }
 

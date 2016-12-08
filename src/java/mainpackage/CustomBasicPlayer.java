@@ -33,7 +33,6 @@ public class CustomBasicPlayer {
 
     public void play(String fileName) {
         if(thread != null) {
-
         }
 
         thread = new PlayerThread(fileName,mainSwing);
