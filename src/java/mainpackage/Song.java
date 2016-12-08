@@ -10,9 +10,17 @@ class Song {
     private String duration;
     private String id;
     private Song song;
+    private int currentRow;
 
     Song(String id, String title, String artist, String album, String duration) {
         this.id = id;
+        this.title = title;
+        this.artist = artist;
+        this.album = album;
+        this.duration = duration;
+    }
+    Song(int currentRow,String title,String artist,String album,String duration){
+        this.currentRow = currentRow;
         this.title = title;
         this.artist = artist;
         this.album = album;
@@ -64,5 +72,13 @@ class Song {
 
     void setId(String id) {
         this.id = id;
+    }
+
+    public int getCurrentRow() {
+        return currentRow;
+    }
+
+    public void setCurrentRow(int currentRow) {
+        this.currentRow = currentRow;
     }
 }

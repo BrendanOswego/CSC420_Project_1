@@ -3,6 +3,7 @@ package mainpackage;
 import com.mpatric.mp3agic.InvalidDataException;
 import com.mpatric.mp3agic.Mp3File;
 import com.mpatric.mp3agic.UnsupportedTagException;
+import javazoom.jl.decoder.JavaLayerException;
 import net.miginfocom.swing.MigLayout;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
@@ -51,7 +52,6 @@ public class CustomJSON {
     List<String> albumImages = new ArrayList<>();
     TableRowSorter<TableModel> rowSorter;
     private List<Song> listOfSongs;
-    private int MAX_ID = 0;
 
     private MusicPlayer player;
     TableModel tableModel = new TableModel(colNames, 0);
@@ -67,6 +67,7 @@ public class CustomJSON {
         this.rowSorter = rowSorter;
 
     }
+
     public void setupTableMethods() {
         songTable.setDragEnabled(true);
         songTable.setFocusable(true);
@@ -89,8 +90,9 @@ public class CustomJSON {
         ArrayList<String> jsonIdList = new ArrayList<>();
         songList = new HashMap<>();
         listOfSongs = new ArrayList<>();
-
-        tableModel.getDataVector().removeAllElements();
+        while (tableModel.getRowCount() > 0) {
+            tableModel.removeRow(0);
+        }
 
         String playlistName = null;
         JSONParser parser = new JSONParser();
@@ -151,7 +153,7 @@ public class CustomJSON {
                             }
 
                             scrollPane.getViewport().revalidate();
-                            MAX_ID++;
+
                         }
 
                     }
@@ -169,7 +171,7 @@ public class CustomJSON {
         }
 
         setupTableMethods();
-        AV.updateListOfSongs(listOfSongs,this);
+        AV.updateListOfSongs(listOfSongs, this);
         //fillEmptyRows();
     }
 
@@ -253,6 +255,7 @@ public class CustomJSON {
     public void loadPlaylistToTable(String name) {
 
         JSONParser parser = new JSONParser();
+        int currentRow = mainSwing.getCurrentSong().getCurrentRow();
         while (tableModel.getRowCount() > 0) {
             tableModel.removeRow(0);
         }
@@ -285,9 +288,35 @@ public class CustomJSON {
                             }
                         }
                     }
+
+
             }
 
         } catch (IOException | ParseException e) {
+            e.printStackTrace();
+        }
+        try {
+            Object obj = parser.parse(new FileReader(jsonFile));
+            JSONObject jsonObject = (JSONObject) obj;
+            JSONObject library = (JSONObject) jsonObject.get("library");
+            JSONArray playlistArr = (JSONArray) library.get("playlist");
+            for (int k = 0; k < playlistArr.size(); k++) {
+                JSONObject playElement2 = (JSONObject) playlistArr.get(k);
+                JSONArray songArr2 = (JSONArray) playElement2.get("song");
+                for (int y = 0; y < songArr2.size(); y++) {
+                    JSONObject songElement2 = (JSONObject) songArr2.get(y);
+                    String title = (String) songElement2.get("title");
+                    String artist = (String) songElement2.get("artist");
+                    if (title != null & artist != null) {
+                        if (title.equalsIgnoreCase(mainSwing.getCurrentSong().getTitle()) && artist.equalsIgnoreCase(mainSwing.getCurrentSong().getArtist())) {
+                            System.out.println("Title: " + title + "\nArtist: " + artist);
+                            songTable.setRowSelectionInterval(0,0);
+                        }
+                    }
+                }
+
+            }
+        } catch (ParseException | IOException e) {
             e.printStackTrace();
         }
         setupTableMethods();
@@ -341,8 +370,6 @@ public class CustomJSON {
                     int modelRow = songTable.convertRowIndexToModel(viewRow);
                     String title = (String) songTable.getValueAt(modelRow, 0);
                     String artist = (String) songTable.getValueAt(modelRow, 1);
-                    String album = (String) songTable.getValueAt(modelRow, 2);
-                    String duration = (String) songTable.getValueAt(modelRow, 3);
                     if (title.equalsIgnoreCase((String) songElement.get("title")) && artist.equalsIgnoreCase((String) songElement.get("artist"))) {
                         String id = (String) songElement.get("id");
                         newEntry.put("id", id);
@@ -454,6 +481,17 @@ public class CustomJSON {
 
         JPopupMenu optionMenu = new JPopupMenu();
         JMenuItem itemPlay = new JMenuItem("Play");
+        itemPlay.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+
+                int viewRow = songTable.convertRowIndexToView(songTable.getSelectedRow());
+                int modelRow = songTable.convertRowIndexToModel(viewRow);
+                mainSwing.playSong(modelRow);
+                String album = (String)songTable.getValueAt(modelRow,2);
+                mainSwing.setAlbumImage(album);
+            }
+        });
         optionMenu.add(itemPlay);
         JMenuItem itemEdit = new JMenuItem("Edit");
         itemEdit.addActionListener(new ActionListener() {
@@ -520,8 +558,6 @@ public class CustomJSON {
                     int modelRow = songTable.convertRowIndexToModel(viewRow);
                     String title = (String) songTable.getValueAt(modelRow, 0);
                     String artist = (String) songTable.getValueAt(modelRow, 1);
-                    String album = (String) songTable.getValueAt(modelRow, 2);
-                    String duration = (String) songTable.getValueAt(modelRow, 3);
                     if (title.equalsIgnoreCase((String) songElement.get("title")) &&
                             artist.equalsIgnoreCase((String) songElement.get("artist"))) {
 
@@ -559,11 +595,13 @@ public class CustomJSON {
         public void mouseClicked(MouseEvent e) {
             JList theList = (JList) e.getSource();
             if (e.getClickCount() == 2) {
+
                 int index = theList.locationToIndex(e.getPoint());
                 if (index >= 0) {
                     String name = (String) theList.getModel().getElementAt(index);
                     if (name.equals("All Songs")) {
                         loadPlaylistToTable("default");
+
                     } else {
                         loadPlaylistToTable(name);
                     }
@@ -748,4 +786,6 @@ public class CustomJSON {
     public DefaultTableModel getTableModel() {
         return this.tableModel;
     }
+
+
 }
